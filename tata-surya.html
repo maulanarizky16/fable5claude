@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tata Surya 3D — Simulasi Interaktif</title>
+<style>
+:root{
+  --bg:#04070f;
+  --panel:rgba(9,14,26,.78);
+  --panel-2:rgba(13,20,36,.92);
+  --line:rgba(127,196,255,.16);
+  --line-strong:rgba(127,196,255,.34);
+  --ink:#dbe6f7;
+  --ink-dim:#8593ad;
+  --ink-faint:#5a6680;
+  --cyan:#7fd0ff;
+  --amber:#ffb454;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","JetBrains Mono",Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Inter",sans-serif;
+  --r:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;
+  -webkit-font-smoothing:antialiased;touch-action:none}
+button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input{font-family:inherit;color:inherit}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:rgba(127,196,255,.18);border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+
+#stage{position:fixed;inset:0;z-index:0}
+#stage canvas{display:block}
+#labels{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+
+/* ---------- HUD label tiap benda langit ---------- */
+.body-label{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:3px;user-select:none;-webkit-user-select:none}
+.body-label .dot{width:5px;height:5px;border-radius:50%;background:currentColor;
+  box-shadow:0 0 6px currentColor;opacity:.95}
+.body-label .nm{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:currentColor;opacity:.85;text-shadow:0 0 6px rgba(0,0,0,.9),0 1px 2px rgba(0,0,0,.9);
+  transform:translateY(2px);white-space:nowrap}
+.body-label:hover .nm{opacity:1}
+.body-label.moonlab .nm{font-size:9.5px;opacity:.6}
+.body-label.moonlab .dot{width:3px;height:3px}
+.body-label.sel .nm{opacity:1;color:var(--cyan)}
+
+/* ---------- Retikel seleksi ---------- */
+#reticle{position:fixed;z-index:2;pointer-events:none;transform:translate(-50%,-50%);display:none}
+#reticle span{position:absolute;width:11px;height:11px;border:1.5px solid var(--cyan);
+  filter:drop-shadow(0 0 4px rgba(127,208,255,.7))}
+#reticle .c1{top:0;left:0;border-right:none;border-bottom:none}
+#reticle .c2{top:0;right:0;border-left:none;border-bottom:none}
+#reticle .c3{bottom:0;left:0;border-right:none;border-top:none}
+#reticle .c4{bottom:0;right:0;border-left:none;border-top:none}
+@keyframes retpulse{0%,100%{opacity:1}50%{opacity:.45}}
+#reticle.on{display:block;animation:retpulse 2.4s ease-in-out infinite}
+
+/* ---------- Bar atas ---------- */
+#topbar{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;justify-content:space-between;
+  align-items:flex-start;padding:14px 16px;pointer-events:none}
+#brand{pointer-events:auto;display:flex;align-items:center;gap:10px;padding:9px 14px;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);backdrop-filter:blur(14px)}
+#brand .sun-ic{width:22px;height:22px;border-radius:50%;flex:none;
+  background:radial-gradient(circle at 38% 35%,#fff3c0,#ffb454 55%,#e2641e 100%);
+  box-shadow:0 0 12px rgba(255,180,84,.8)}
+#brand h1{font-size:13px;font-weight:650;letter-spacing:.22em;text-transform:uppercase}
+#brand small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
+  color:var(--ink-dim);margin-top:2px}
+
+#chrono{pointer-events:auto;text-align:right;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);padding:10px 16px;backdrop-filter:blur(14px);cursor:pointer;min-width:230px}
+#chrono:hover{border-color:var(--line-strong)}
+#clockDate{font-size:13.5px;font-weight:600;letter-spacing:.02em}
+#clockTime{font-family:var(--mono);font-size:21px;letter-spacing:.08em;color:var(--cyan);
+  margin-top:2px;font-variant-numeric:tabular-nums}
+#speedChip{display:inline-block;margin-top:6px;font-family:var(--mono);font-size:10px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--amber);
+  border:1px solid rgba(255,180,84,.35);border-radius:99px;padding:3px 10px}
+#speedChip.paused{color:var(--ink-dim);border-color:var(--line)}
+
+#datePopover{position:fixed;top:96px;right:16px;z-index:6;background:var(--panel-2);
+  border:1px solid var(--line-strong);border-radius:var(--r);padding:14px;display:none;
+  backdrop-filter:blur(16px);box-shadow:0 12px 40px rgba(0,0,0,.6)}
+#datePopover.open{display:block}
+#datePopover label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ink-dim);margin-bottom:8px}
+#dateInput{background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:8px;
+  padding:8px 10px;font-family:var(--mono);font-size:13px;color-scheme:dark;width:230px}
+#datePopover .hint{margin-top:8px;font-size:11px;color:var(--ink-faint)}
+
+/* ---------- Sidebar katalog ---------- */
+#sidebar{position:fixed;top:84px;left:16px;bottom:96px;width:218px;z-index:4;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  backdrop-filter:blur(14px);display:flex;flex-direction:column;overflow:hidden;
+  transition:transform .28s ease,opacity .28s ease}
+#sidebar.hidden{transform:translateX(-110%);opacity:0;pointer-events:none}
+#sidebar .sb-head{padding:12px 14px 8px}
+#sidebar .sb-head h2{font-family:var(--mono);font-size:10px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--ink-dim);font-weight:600}
+#searchInput{margin:8px 12px 6px;background:rgba(0,0,0,.35);border:1px solid var(--line);
+  border-radius:9px;padding:7px 11px;font-size:12.5px;color:var(--ink);outline:none}
+#searchInput:focus{border-color:var(--line-strong)}
+#searchInput::placeholder{color:var(--ink-faint)}
+#bodyList{flex:1;overflow-y:auto;padding:4px 8px 12px}
+.grp{font-family:var(--mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--ink-faint);padding:10px 8px 4px}
+.body-row{display:flex;align-items:center;gap:9px;width:100%;text-align:left;
+  padding:7px 9px;border-radius:9px;font-size:13px;color:var(--ink)}
+.body-row:hover{background:rgba(127,196,255,.08)}
+.body-row.sel{background:rgba(127,196,255,.14);box-shadow:inset 0 0 0 1px var(--line-strong)}
+.body-row .bd{width:8px;height:8px;border-radius:50%;flex:none;box-shadow:0 0 6px currentColor;background:currentColor}
+.body-row .tp{margin-left:auto;font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;
+  color:var(--ink-faint);text-transform:uppercase}
+
+#sidebarToggle{position:fixed;top:84px;left:16px;z-index:5;width:38px;height:38px;
+  background:var(--panel);border:1px solid var(--line);border-radius:11px;backdrop-filter:blur(14px);
+  display:none;align-items:center;justify-content:center;color:var(--ink-dim)}
+#sidebarToggle:hover{color:var(--cyan);border-color:var(--line-strong)}
+#sidebarToggle.shown{display:flex}
+
+/* ---------- Panel info ---------- */
+#infoPanel{position:fixed;top:84px;right:16px;width:296px;max-height:calc(100vh - 196px);z-index:4;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  backdrop-filter:blur(14px);overflow-y:auto;display:none}
+#infoPanel.open{display:block}
+#infoPanel .ip-head{position:sticky;top:0;background:var(--panel-2);padding:14px 16px 12px;
+  border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:10px}
+#infoPanel .ip-head .bd{width:11px;height:11px;border-radius:50%;margin-top:5px;flex:none;
+  box-shadow:0 0 8px currentColor;background:currentColor}
+#infoPanel h3{font-size:18px;font-weight:700;letter-spacing:.03em}
+#infoPanel .ip-type{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ink-dim);margin-top:2px}
+#infoClose{margin-left:auto;width:26px;height:26px;border-radius:8px;color:var(--ink-dim);
+  font-size:15px;line-height:1}
+#infoClose:hover{background:rgba(127,196,255,.1);color:var(--ink)}
+.live-grid{padding:12px 16px;border-bottom:1px solid var(--line);display:grid;gap:10px}
+.live-item .lv-k{font-family:var(--mono);font-size:9px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ink-faint)}
+.live-item .lv-v{font-family:var(--mono);font-size:16px;color:var(--cyan);
+  font-variant-numeric:tabular-nums;margin-top:2px}
+.live-item .lv-s{font-family:var(--mono);font-size:10.5px;color:var(--ink-dim);
+  font-variant-numeric:tabular-nums}
+.fact-rows{padding:10px 16px;border-bottom:1px solid var(--line)}
+.fact-row{display:flex;justify-content:space-between;gap:12px;padding:5.5px 0;font-size:12.5px}
+.fact-row .fk{color:var(--ink-dim)}
+.fact-row .fv{font-family:var(--mono);font-size:11.5px;text-align:right;font-variant-numeric:tabular-nums}
+.ip-desc{padding:12px 16px;font-size:12.5px;line-height:1.6;color:var(--ink-dim)}
+.ip-actions{padding:0 16px 16px;display:flex;flex-direction:column;gap:8px}
+.ip-btn{border:1px solid var(--line-strong);border-radius:10px;padding:9px 12px;font-size:12.5px;
+  color:var(--cyan);text-align:center;letter-spacing:.04em}
+.ip-btn:hover{background:rgba(127,208,255,.1)}
+.ip-btn.amber{color:var(--amber);border-color:rgba(255,180,84,.4)}
+.ip-btn.amber:hover{background:rgba(255,180,84,.1)}
+
+/* ---------- Toolbar bawah ---------- */
+#toolbar{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:5;
+  display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);
+  border-radius:16px;padding:7px;backdrop-filter:blur(16px);max-width:calc(100vw - 24px);
+  overflow-x:auto;scrollbar-width:none}
+#toolbar::-webkit-scrollbar{display:none}
+.tb-sep{width:1px;height:24px;background:var(--line);flex:none;margin:0 3px}
+.tb-btn{width:38px;height:38px;flex:none;border-radius:11px;display:flex;align-items:center;
+  justify-content:center;color:var(--ink-dim);position:relative}
+.tb-btn svg{width:20px;height:20px}
+.tb-btn:hover{color:var(--ink);background:rgba(127,196,255,.08)}
+.tb-btn.on{color:var(--cyan);background:rgba(127,208,255,.12);box-shadow:inset 0 0 0 1px var(--line-strong)}
+.tb-btn.txt{width:auto;padding:0 12px;font-family:var(--mono);font-size:11px;letter-spacing:.12em}
+.tb-btn:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+#scalePopover{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);z-index:6;
+  background:var(--panel-2);border:1px solid var(--line-strong);border-radius:var(--r);
+  padding:14px 18px;display:none;backdrop-filter:blur(16px);width:262px}
+#scalePopover.open{display:block}
+#scalePopover label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ink-dim);margin-bottom:10px}
+#scaleRange{width:100%;accent-color:var(--cyan)}
+#scaleVal{font-family:var(--mono);font-size:11px;color:var(--cyan);margin-top:6px;text-align:center}
+#scalePopover .hint{margin-top:6px;font-size:10.5px;color:var(--ink-faint);text-align:center}
+
+/* ---------- Splash, loading, bantuan, toast ---------- */
+#loading{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease}
+#loading.gone{opacity:0;pointer-events:none}
+#loading .ld-orbit{width:64px;height:64px;border-radius:50%;border:1px solid var(--line-strong);
+  position:relative;animation:spin 2.6s linear infinite}
+#loading .ld-orbit::after{content:"";position:absolute;top:-4px;left:50%;width:8px;height:8px;
+  border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber)}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loadingText{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--ink-dim)}
+#loadingBar{width:220px;height:2px;background:rgba(127,196,255,.12);border-radius:2px;overflow:hidden}
+#loadingBar i{display:block;height:100%;width:0;background:var(--cyan);transition:width .25s ease}
+
+#splash{position:fixed;inset:0;z-index:15;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:14px;pointer-events:none;transition:opacity 1.1s ease}
+#splash.gone{opacity:0}
+#splash h2{font-size:clamp(30px,6vw,56px);font-weight:800;letter-spacing:.3em;text-transform:uppercase;
+  text-shadow:0 0 40px rgba(127,208,255,.45);padding-left:.3em;text-align:center}
+#splash p{font-family:var(--mono);font-size:clamp(10px,1.6vw,12.5px);letter-spacing:.28em;
+  text-transform:uppercase;color:var(--cyan);text-align:center}
+#splash .hintline{margin-top:14px;font-size:12px;letter-spacing:.06em;color:var(--ink-dim);
+  font-family:var(--sans);text-transform:none}
+
+#helpModal{position:fixed;inset:0;z-index:30;background:rgba(2,4,9,.72);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;padding:20px}
+#helpModal.open{display:flex}
+#helpCard{background:var(--panel-2);border:1px solid var(--line-strong);border-radius:18px;
+  max-width:520px;width:100%;max-height:84vh;overflow-y:auto;padding:24px 26px}
+#helpCard h3{font-size:16px;letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px}
+#helpCard .sub{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--ink-dim);
+  text-transform:uppercase;margin-bottom:16px}
+#helpCard h4{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--cyan);margin:16px 0 8px}
+#helpCard p{font-size:12.5px;line-height:1.65;color:var(--ink-dim);margin-bottom:6px}
+.kbd-row{display:flex;justify-content:space-between;align-items:center;padding:4.5px 0;font-size:12.5px;
+  color:var(--ink-dim);gap:14px}
+.kbd-row b{color:var(--ink);font-weight:500}
+kbd{font-family:var(--mono);font-size:10.5px;background:rgba(127,196,255,.1);
+  border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:var(--cyan);white-space:nowrap}
+#helpClose{margin-top:18px;width:100%;border:1px solid var(--line-strong);border-radius:10px;
+  padding:10px;color:var(--cyan);letter-spacing:.06em}
+#helpClose:hover{background:rgba(127,208,255,.1)}
+
+#toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(8px);z-index:25;
+  background:var(--panel-2);border:1px solid var(--line-strong);border-radius:11px;padding:9px 18px;
+  font-size:12.5px;opacity:0;pointer-events:none;transition:opacity .3s ease,transform .3s ease;
+  white-space:nowrap;max-width:calc(100vw - 40px);text-overflow:ellipsis;overflow:hidden}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+#credit{position:fixed;bottom:18px;left:16px;z-index:3;font-family:var(--mono);font-size:9px;
+  letter-spacing:.1em;color:var(--ink-faint);pointer-events:none;text-transform:uppercase}
+
+#nogl{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;
+  text-align:center;padding:30px;color:var(--ink-dim);font-size:14px;line-height:1.7}
+
+/* ---------- Responsif ---------- */
+@media (max-width:900px){
+  #sidebar{width:200px}
+  #infoPanel{width:272px}
+}
+@media (max-width:700px){
+  #topbar{padding:10px}
+  #brand small{display:none}
+  #brand h1{font-size:11px}
+  #chrono{min-width:0;padding:8px 12px}
+  #clockDate{font-size:11px}
+  #clockTime{font-size:16px}
+  #sidebar{top:auto;bottom:80px;left:10px;right:10px;width:auto;max-height:42vh}
+  #sidebarToggle{top:auto;bottom:80px;left:10px}
+  #sidebar:not(.hidden) ~ #sidebarToggle{display:none}
+  #infoPanel{top:auto;bottom:80px;left:10px;right:10px;width:auto;max-height:46vh}
+  #toolbar{bottom:10px}
+  #credit{display:none}
+  #datePopover{right:10px;left:10px}
+  #dateInput{width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  #reticle.on{animation:none}
+  #loading .ld-orbit{animation-duration:8s}
+  *{transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="labels"></div>
+<div id="reticle"><span class="c1"></span><span class="c2"></span><span class="c3"></span><span class="c4"></span></div>
+
+<header id="topbar">
+  <div id="brand">
+    <div class="sun-ic"></div>
+    <div>
+      <h1>Tata Surya</h1>
+      <small>POSISI PLANET REAL-TIME &middot; JPL</small>
+    </div>
+  </div>
+  <div id="chrono" title="Klik untuk mengatur tanggal &amp; waktu simulasi">
+    <div id="clockDate">&nbsp;</div>
+    <div id="clockTime">&nbsp;</div>
+    <span id="speedChip">&nbsp;</span>
+  </div>
+</header>
+
+<div id="datePopover">
+  <label for="dateInput">Atur tanggal &amp; waktu simulasi</label>
+  <input type="datetime-local" id="dateInput" step="1">
+  <div class="hint">Coba 9 Feb 1986 — perihelion Komet Halley.</div>
+</div>
+
+<aside id="sidebar">
+  <div class="sb-head"><h2>Katalog Objek</h2></div>
+  <input type="text" id="searchInput" placeholder="Cari objek...">
+  <div id="bodyList"></div>
+</aside>
+<button id="sidebarToggle" title="Buka katalog objek">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+</button>
+
+<aside id="infoPanel"></aside>
+
+<footer id="toolbar">
+  <button class="tb-btn on" id="btnOrbits" title="Garis orbit (O)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="12" cy="12" rx="9" ry="4.2"/><circle cx="12" cy="12" r="2.1" fill="currentColor" stroke="none"/><circle cx="20.2" cy="10" r="1.5" fill="currentColor" stroke="none"/></svg>
+  </button>
+  <button class="tb-btn on" id="btnLabels" title="Nama objek (N)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M20 4h-7L4 13l7 7 9-9V4z"/><circle cx="15.5" cy="8.5" r="1.4" fill="currentColor" stroke="none"/></svg>
+  </button>
+  <button class="tb-btn" id="btnGrid" title="Grid ekliptika (G)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17M3.5 12h17"/></svg>
+  </button>
+  <button class="tb-btn on" id="btnBelt" title="Sabuk asteroid &amp; Kuiper (A)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="20" cy="9" r="1.2" fill="currentColor" stroke="none"/><circle cx="18.4" cy="13.8" r="1.2" fill="currentColor" stroke="none"/><circle cx="14.8" cy="17.4" r="1.2" fill="currentColor" stroke="none"/><circle cx="10" cy="18.8" r="1.2" fill="currentColor" stroke="none"/><circle cx="5.4" cy="17" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" opacity=".45"/></svg>
+  </button>
+  <button class="tb-btn on" id="btnMoons" title="Satelit alami (U)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10.5" cy="13.5" r="4.5"/><circle cx="18.5" cy="6.5" r="1.8" fill="currentColor" stroke="none"/><path d="M4.6 7.6a9.5 9.5 0 0 1 11-3.4" stroke-dasharray="2.5 2.5"/></svg>
+  </button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" id="btnSlower" title="Perlambat / mundurkan waktu (J)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6l-6 6 6 6M19 6l-6 6 6 6"/></svg>
+  </button>
+  <button class="tb-btn" id="btnPause" title="Jeda / lanjut (Spasi)">
+    <svg id="icPause" viewBox="0 0 24 24"><path d="M8 5h3.2v14H8zM12.8 5H16v14h-3.2z" fill="currentColor"/></svg>
+    <svg id="icPlay" viewBox="0 0 24 24" style="display:none"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+  </button>
+  <button class="tb-btn" id="btnFaster" title="Percepat waktu (L)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 6l6 6-6 6M5 6l6 6-6 6"/></svg>
+  </button>
+  <button class="tb-btn txt" id="btnReal" title="Laju waktu nyata, 1:1 (K)">1&times;</button>
+  <button class="tb-btn txt" id="btnNow" title="Setel ke tanggal &amp; jam saat ini (R)">KINI</button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" id="btnTour" title="Tur otomatis antar planet (T)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M7 17.6C13 16 10.5 8 17.2 6.4" stroke-dasharray="2.5 2.5"/></svg>
+  </button>
+  <button class="tb-btn" id="btnScale" title="Skala ukuran planet (S)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="14.5" r="5"/><circle cx="17.5" cy="7.5" r="2.6"/></svg>
+  </button>
+  <button class="tb-btn" id="btnShot" title="Simpan tangkapan layar (P)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2.5"/><circle cx="12" cy="13.5" r="3.8"/><path d="M8.5 7l1.6-3h3.8L15.5 7"/></svg>
+  </button>
+  <button class="tb-btn" id="btnFull" title="Layar penuh (F)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
+  <button class="tb-btn" id="btnHelp" title="Bantuan (H)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="8.6"/><path d="M9.6 9.7a2.5 2.5 0 1 1 3.6 2.2c-.9.5-1.2 1-1.2 2"/><circle cx="12" cy="16.8" r=".95" fill="currentColor" stroke="none"/></svg>
+  </button>
+</footer>
+
+<div id="scalePopover">
+  <label for="scaleRange">Skala ukuran planet</label>
+  <input type="range" id="scaleRange" min="0.3" max="3" step="0.05" value="1">
+  <div id="scaleVal">1,0&times;</div>
+  <div class="hint">Jarak antar planet selalu proporsional (1 SA = 70 unit).</div>
+</div>
+
+<div id="loading">
+  <div class="ld-orbit"></div>
+  <div id="loadingText">MENYIAPKAN SIMULASI</div>
+  <div id="loadingBar"><i></i></div>
+</div>
+
+<div id="splash">
+  <h2>Tata Surya</h2>
+  <p>Simulasi 3D &middot; Posisi Planet Sesuai Tanggal Hari Ini</p>
+  <div class="hintline">Seret untuk memutar &middot; gulir untuk zoom &middot; klik planet untuk menjelajah</div>
+</div>
+
+<div id="helpModal">
+  <div id="helpCard">
+    <h3>Bantuan</h3>
+    <div class="sub">Panduan kontrol &amp; catatan akurasi</div>
+
+    <h4>Mouse / Sentuh</h4>
+    <div class="kbd-row"><b>Putar pandangan</b><span>seret kiri / satu jari</span></div>
+    <div class="kbd-row"><b>Zoom</b><span>gulir / cubit dua jari</span></div>
+    <div class="kbd-row"><b>Geser target</b><span>seret kanan</span></div>
+    <div class="kbd-row"><b>Pilih objek</b><span>klik planet atau labelnya</span></div>
+    <div class="kbd-row"><b>Zoom dekat</b><span>klik dua kali pada objek</span></div>
+
+    <h4>Pintasan keyboard</h4>
+    <div class="kbd-row"><b>Jeda / lanjut</b><kbd>Spasi</kbd></div>
+    <div class="kbd-row"><b>Perlambat / percepat waktu</b><span><kbd>J</kbd> <kbd>L</kbd></span></div>
+    <div class="kbd-row"><b>Laju waktu nyata (1:1)</b><kbd>K</kbd></div>
+    <div class="kbd-row"><b>Setel ke saat ini</b><kbd>R</kbd></div>
+    <div class="kbd-row"><b>Pilih objek cepat</b><span><kbd>1</kbd>&ndash;<kbd>9</kbd> planet, <kbd>0</kbd> Matahari</span></div>
+    <div class="kbd-row"><b>Orbit / Nama / Grid</b><span><kbd>O</kbd> <kbd>N</kbd> <kbd>G</kbd></span></div>
+    <div class="kbd-row"><b>Sabuk asteroid / Satelit</b><span><kbd>A</kbd> <kbd>U</kbd></span></div>
+    <div class="kbd-row"><b>Tur otomatis</b><kbd>T</kbd></div>
+    <div class="kbd-row"><b>Layar penuh / Tangkapan layar</b><span><kbd>F</kbd> <kbd>P</kbd></span></div>
+    <div class="kbd-row"><b>Lepas pilihan</b><kbd>Esc</kbd></div>
+
+    <h4>Patut dicoba</h4>
+    <p>Pilih <b>Komet Halley</b>, tekan tombol <b>perihelion 2061</b> di panel info, lalu percepat waktu — ekornya tumbuh saat mendekati Matahari (orbitnya retrograde, miring 162&deg;).</p>
+    <p>Perhatikan <b>Uranus</b>: sumbu rotasinya nyaris rebah (97,8&deg;), jadi cincin tipisnya tampak vertikal.</p>
+
+    <h4>Akurasi</h4>
+    <p>Posisi heliosentris dihitung dari elemen orbit Keplerian JPL (epoch J2000 + laju per abad), paling akurat untuk rentang 1800&ndash;2050. Ukuran planet diperbesar agar terlihat; jarak antar planet proporsional. Fase bulan dan perturbasi tidak dimodelkan.</p>
+
+    <button id="helpClose">Tutup</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="credit">Elemen orbit: JPL &middot; Three.js r128 &middot; tekstur prosedural</div>
+<div id="nogl"><div>Perangkat ini tidak mendukung WebGL,<br>sehingga simulasi 3D tidak dapat dijalankan.</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+'use strict';
+/* Fallback bila CDN Three.js gagal: stub minimal supaya skrip tetap
+   ter-parse dan init() bisa menampilkan pesan kesalahan dengan rapi. */
+if(typeof THREE==='undefined'){
+  window.__NOTHREE=true;
+  window.THREE={Vector3:class{},Vector2:class{},Raycaster:class{},Matrix4:class{}};
+}
+/* ============================================================
+   BAGIAN 1 · KONSTANTA & MEKANIKA ORBIT (elemen Keplerian JPL)
+   Sumber elemen: E.M. Standish, JPL — valid terbaik 1800–2050
+   ============================================================ */
+const AU=70, D2R=Math.PI/180, J2000=2451545.0, TAU=Math.PI*2;
+const AU_KM=1.495978707e8, GM_SUN=1.32712440018e11, C_KMS=299792.458;
+function clamp(x,a,b){return x<a?a:(x>b?b:x)}
+function smooth(a,b,x){const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)}
+function jdFromMs(ms){return ms/86400000+2440587.5}
+function msFromJd(jd){return (jd-2440587.5)*86400000}
+const JD_MIN=jdFromMs(Date.UTC(1700,0,1));
+const JD_MAX=jdFromMs(Date.UTC(2399,11,31,23,59));
+
+function solveKepler(M,e){
+  M=((M+Math.PI)%TAU+TAU)%TAU-Math.PI;
+  let E=e>0.8?Math.PI*(M<0?-1:1):M;
+  for(let i=0;i<40;i++){
+    const f=E-e*Math.sin(E)-M, fp=1-e*Math.cos(E), dE=f/fp;
+    E-=dE; if(Math.abs(dE)<1e-9)break;
+  }
+  return E;
+}
+/* elemen -> posisi heliosentris ekliptika (satuan SA) */
+function orbPos(a,e,I,w,O,M){
+  const E=solveKepler(M,e);
+  const xp=a*(Math.cos(E)-e), yp=a*Math.sqrt(1-e*e)*Math.sin(E);
+  const cw=Math.cos(w),sw=Math.sin(w),cO=Math.cos(O),sO=Math.sin(O),ci=Math.cos(I),si=Math.sin(I);
+  return {
+    x:(cw*cO-sw*sO*ci)*xp+(-sw*cO-cw*sO*ci)*yp,
+    y:(cw*sO+sw*cO*ci)*xp+(-sw*sO+cw*cO*ci)*yp,
+    z:(sw*si)*xp+(cw*si)*yp
+  };
+}
+/* [a, adot, e, edot, I, Idot, L, Ldot, varpi, varpidot, Omega, Omegadot] */
+const EL={
+  Merkurius:[0.38709927,0.00000037,0.20563593,0.00001906,7.00497902,-0.00594749,252.25032350,149472.67411175,77.45779628,0.16047689,48.33076593,-0.12534081],
+  Venus:[0.72333566,0.00000390,0.00677672,-0.00004107,3.39467605,-0.00078890,181.97909950,58517.81538729,131.60246718,0.00268329,76.67984255,-0.27769418],
+  Bumi:[1.00000261,0.00000562,0.01671123,-0.00004392,-0.00001531,-0.01294668,100.46457166,35999.37244981,102.93768193,0.32327364,0.0,0.0],
+  Mars:[1.52371034,0.00001847,0.09339410,0.00007882,1.84969142,-0.00813131,-4.55343205,19140.30268499,-23.94362959,0.44441088,49.55953891,-0.29257343],
+  Jupiter:[5.20288700,-0.00011607,0.04838624,-0.00013253,1.30439695,-0.00183714,34.39644051,3034.74612775,14.72847983,0.21252668,100.47390909,0.20469106],
+  Saturnus:[9.53667594,-0.00125060,0.05386179,-0.00050991,2.48599187,0.00193609,49.95424423,1222.49362201,92.59887831,-0.41897216,113.66242448,-0.28867794],
+  Uranus:[19.18916464,-0.00196176,0.04725744,-0.00004397,0.77263783,-0.00242939,313.23810451,428.48202785,170.95427630,0.40805281,74.01692503,0.04240589],
+  Neptunus:[30.06992276,0.00026291,0.00859048,0.00005105,1.77004347,0.00035372,-55.12002969,218.45945325,44.96476227,-0.32241464,131.78422574,-0.00508664],
+  Pluto:[39.48211675,-0.00031596,0.24882730,0.00005170,17.14001206,0.00004818,238.92903833,145.20780515,224.06891629,-0.04062942,110.30393684,-0.01183482]
+};
+function elemAt(name,jd){
+  const e=EL[name],T=(jd-J2000)/36525;
+  return {a:e[0]+e[1]*T, e:e[2]+e[3]*T, I:(e[4]+e[5]*T)*D2R,
+    L:(e[6]+e[7]*T)*D2R, vp:(e[8]+e[9]*T)*D2R, O:(e[10]+e[11]*T)*D2R};
+}
+function planetState(name,jd){
+  const q=elemAt(name,jd);
+  return orbPos(q.a,q.e,q.I,q.vp-q.O,q.O,q.L-q.vp);
+}
+/* Komet 1P/Halley — elemen tetap, epoch perihelion 9 Feb 1986 */
+const HALLEY={a:17.834,e:0.96714,I:162.262*D2R,w:111.33*D2R,O:58.42*D2R,Tp:2446470.95,P:75.32*365.25};
+function halleyState(jd){
+  return orbPos(HALLEY.a,HALLEY.e,HALLEY.I,HALLEY.w,HALLEY.O,TAU*(jd-HALLEY.Tp)/HALLEY.P);
+}
+function nextHalleyPeri(jd){
+  return HALLEY.Tp+Math.max(0,Math.ceil((jd-HALLEY.Tp)/HALLEY.P))*HALLEY.P;
+}
+/*__MATH_END__*/
+
+/* ============================================================
+   BAGIAN 2 · NOISE & TEKSTUR PROSEDURAL (kanvas, tanpa aset)
+   ============================================================ */
+function v3(p){return new THREE.Vector3(p.x*AU,p.z*AU,-p.y*AU)}
+function visR(km){return 0.042*Math.pow(km,0.4)}
+function hash3(x,y,z){const s=Math.sin(x*127.1+y*311.7+z*74.7)*43758.5453;return s-Math.floor(s)}
+function vnoise(x,y,z){
+  const xi=Math.floor(x),yi=Math.floor(y),zi=Math.floor(z),xf=x-xi,yf=y-yi,zf=z-zi;
+  const u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf),w=zf*zf*(3-2*zf);
+  const n000=hash3(xi,yi,zi),n100=hash3(xi+1,yi,zi),n010=hash3(xi,yi+1,zi),n110=hash3(xi+1,yi+1,zi);
+  const n001=hash3(xi,yi,zi+1),n101=hash3(xi+1,yi,zi+1),n011=hash3(xi,yi+1,zi+1),n111=hash3(xi+1,yi+1,zi+1);
+  const a=n000+(n100-n000)*u,b=n010+(n110-n010)*u,c=n001+(n101-n001)*u,dd=n011+(n111-n011)*u;
+  const ab=a+(b-a)*v, cd=c+(dd-c)*v;
+  return ab+(cd-ab)*w;
+}
+function fbm(x,y,z,o){let s=0,a=.5,f=1;for(let i=0;i<o;i++){s+=a*vnoise(x*f,y*f,z*f);f*=2;a*=.5}return s}
+function rng(seed){let t=seed>>>0;return function(){t+=0x6D2B79F5;let r=Math.imul(t^t>>>15,1|t);r^=r+Math.imul(r^r>>>7,61|r);return((r^r>>>14)>>>0)/4294967296}}
+function mixc(a,b,t){return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t]}
+function grad(st,t){
+  if(t<=st[0][0])return st[0][1];
+  for(let i=1;i<st.length;i++)if(t<=st[i][0]){
+    return mixc(st[i-1][1],st[i][1],(t-st[i-1][0])/(st[i][0]-st[i-1][0]));
+  }
+  return st[st.length-1][1];
+}
+function put(d,i,c,a){d[i]=c[0];d[i+1]=c[1];d[i+2]=c[2];d[i+3]=a===undefined?255:a}
+function paintSphere(w,h,fn){
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const ctx=c.getContext('2d'),img=ctx.createImageData(w,h),d=img.data;
+  for(let y=0;y<h;y++){
+    const v=y/(h-1),lat=(.5-v)*Math.PI,cl=Math.cos(lat),sl=Math.sin(lat);
+    for(let x=0;x<w;x++){
+      const u=x/w,lon=u*TAU,nx=cl*Math.cos(lon),ny=cl*Math.sin(lon),nz=sl;
+      fn(d,(y*w+x)*4,nx,ny,nz,u,v,lat);
+    }
+  }
+  ctx.putImageData(img,0,0);return c;
+}
+function addCraters(c,n,seed,dark,light){
+  const ctx=c.getContext('2d'),R=rng(seed),k=c.width/384;
+  for(let i=0;i<n;i++){
+    const x=R()*c.width,y=c.height*(.06+R()*.88),r=(1.6+R()*R()*13)*k;
+    const draw=(cx)=>{
+      const g=ctx.createRadialGradient(cx,y,0,cx,y,r);
+      g.addColorStop(0,'rgba('+dark+','+(.22+R()*.3).toFixed(2)+')');
+      g.addColorStop(.72,'rgba('+dark+',0.1)');
+      g.addColorStop(.9,'rgba('+light+',0.2)');
+      g.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,y,r,0,TAU);ctx.fill();
+    };
+    draw(x); if(x<r)draw(x+c.width); if(x>c.width-r)draw(x-c.width);
+  }
+}
+function addCracks(c,n,seed,col){
+  const ctx=c.getContext('2d'),R=rng(seed);
+  for(let i=0;i<n;i++){
+    ctx.strokeStyle='rgba('+col+','+(.14+R()*.3).toFixed(2)+')';
+    ctx.lineWidth=.5+R()*1.5;
+    let x=R()*c.width,y=R()*c.height;
+    ctx.beginPath();ctx.moveTo(x,y);
+    const s=3+(R()*4|0);
+    for(let j=0;j<s;j++){
+      const nx2=x+(R()-.5)*c.width*.45,ny2=clamp(y+(R()-.5)*c.height*.4,0,c.height);
+      ctx.quadraticCurveTo(x+(R()-.5)*60,y+(R()-.5)*60,nx2,ny2);
+      x=nx2;y=ny2;
+    }
+    ctx.stroke();
+  }
+}
+function radialSprite(size,stops){
+  const c=document.createElement('canvas');c.width=c.height=size;
+  const ctx=c.getContext('2d'),g=ctx.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+  for(const s of stops)g.addColorStop(s[0],s[1]);
+  ctx.fillStyle=g;ctx.fillRect(0,0,size,size);
+  return c;
+}
+
+/* --- palet --- */
+const P_JUP=[[0,[168,160,164]],[.08,[198,184,168]],[.16,[226,214,194]],[.22,[178,140,108]],[.30,[240,230,208]],[.38,[198,158,120]],[.45,[246,236,216]],[.52,[180,134,100]],[.60,[240,228,206]],[.68,[204,164,126]],[.78,[226,208,184]],[.88,[192,178,166]],[1,[166,158,162]]];
+const P_SAT=[[0,[172,160,140]],[.12,[208,190,158]],[.25,[230,212,174]],[.4,[216,194,152]],[.5,[236,220,186]],[.62,[218,198,160]],[.75,[228,212,178]],[.9,[200,184,154]],[1,[170,158,140]]];
+const P_NEP=[[0,[40,66,148]],[.3,[52,92,190]],[.5,[64,112,206]],[.7,[48,86,180]],[1,[34,58,138]]];
+const P_MAR=[[0,[118,60,38]],[.35,[164,92,52]],[.6,[198,124,72]],[.8,[216,152,98]],[1,[228,172,118]]];
+const P_SUN=[[0,[255,138,38]],[.45,[255,190,80]],[.75,[255,224,140]],[1,[255,247,205]]];
+const P_IO=[[0,[148,108,38]],[.5,[214,182,80]],[1,[238,224,150]]];
+const P_PLU=[[0,[148,110,84]],[.5,[196,164,128]],[1,[224,200,168]]];
+
+/* --- generator tekstur per benda --- */
+const TEXGEN={
+  sun(){
+    return {map:paintSphere(384,192,(d,i,x,y,z)=>{
+      const n=fbm(x*5.5,y*5.5,z*5.5,4),m=fbm(x*16+2,y*16,z*16,3);
+      let c=grad(P_SUN,clamp(n*1.3-.08,0,1));
+      if(m<.34)c=mixc(c,[214,110,30],.4);
+      put(d,i,c);
+    })};
+  },
+  mercury(){
+    const c=paintSphere(384,192,(d,i,x,y,z)=>{
+      const g=92+fbm(x*5,y*5,z*5,4)*74+fbm(x*13+5,y*13,z*13,3)*18;
+      put(d,i,[g,g*.965,g*.92]);
+    });
+    addCraters(c,250,11,'42,38,34','212,202,190');
+    return {map:c};
+  },
+  venus(){
+    return {map:paintSphere(384,192,(d,i,x,y,z,u,v,lat)=>{
+      const s=fbm(x*2.5,y*2.5,z*2.5+1.7,4);
+      const vv=clamp(v+(s-.47)*.5+.06*Math.sin(u*TAU*2+lat*5),0,1);
+      let c=grad([[0,[198,170,122]],[.3,[226,202,152]],[.5,[240,220,170]],[.7,[228,204,154]],[1,[206,178,128]]],vv);
+      const m=fbm(x*7+9,y*7,z*7,3);
+      c=mixc(c,[250,236,196],smooth(.58,.75,m)*.45);
+      put(d,i,c);
+    })};
+  },
+  earth(){
+    const spec=document.createElement('canvas');spec.width=512;spec.height=256;
+    const sctx=spec.getContext('2d'),simg=sctx.createImageData(512,256),sd=simg.data;
+    const map=paintSphere(512,256,(d,i,x,y,z,u,v,lat)=>{
+      const n=fbm(x*2.3,y*2.3,z*2.3,5)+.18*fbm(x*6.5+3,y*6.5,z*6.5,4);
+      const det=fbm(x*9+7,y*9,z*9,4),la=Math.abs(lat);
+      let c,sv;
+      const iceJit=fbm(x*4+21,y*4,z*4,3)*.14;
+      if(n>.60){ /* daratan */
+        const h=clamp((n-.60)/.34,0,1);
+        c=mixc([64,108,52],[122,150,72],clamp(det*1.2,0,1));
+        if(la>.45&&la<.78)c=mixc(c,[198,174,122],smooth(.5,.72,det)*.7); /* gurun subtropis */
+        if(la>.9)c=mixc(c,[96,100,76],smooth(.9,1.2,la)); /* tundra */
+        if(h>.55)c=mixc(c,[140,132,122],smooth(.55,.85,h)); /* pegunungan */
+        if(h>.82||la>1.13+iceJit)c=mixc(c,[238,242,246],.9); /* salju & es */
+        sv=la>1.13+iceJit?120:30;
+      }else{ /* samudra */
+        const dep=clamp((.60-n)/.2,0,1);
+        c=mixc([44,118,156],[12,38,88],dep);
+        if(n>.565)c=mixc(c,[70,150,170],smooth(.565,.6,n)*.6); /* pesisir dangkal */
+        sv=235;
+        if(la>1.22+iceJit){c=[226,236,244];sv=130} /* es laut kutub */
+      }
+      put(d,i,c);
+      sd[i]=sd[i+1]=sd[i+2]=sv;sd[i+3]=255;
+    });
+    sctx.putImageData(simg,0,0);
+    const clouds=paintSphere(384,192,(d,i,x,y,z)=>{
+      const n=fbm(x*3.1+13,y*3.1,z*3.1,4)+.25*fbm(x*8+5,y*8,z*8,3);
+      put(d,i,[255,255,255],smooth(.58,.86,n)*225);
+    });
+    return {map,spec,clouds};
+  },
+  mars(){
+    return {map:paintSphere(384,192,(d,i,x,y,z,u,v,lat)=>{
+      const n=fbm(x*3.2,y*3.2,z*3.2,5),m=fbm(x*2.4+8,y*2.4,z*2.4,4),la=Math.abs(lat);
+      let c=grad(P_MAR,clamp(n*1.15,0,1));
+      if(m>.6)c=mixc(c,[84,50,36],smooth(.6,.74,m)*.6); /* maria gelap */
+      const cap=smooth(1.18+fbm(x*4+3,y*4,z*4,3)*.12,1.34,la);
+      if(cap>0)c=mixc(c,[236,232,228],cap);
+      put(d,i,c);
+    })};
+  },
+  jupiter(){
+    return {map:paintSphere(448,224,(d,i,x,y,z,u,v)=>{
+      const vv=clamp(v+(fbm(x*3.4,y*3.4,z*3.4+7.3,4)-.47)*.12+(fbm(x*9,y*9,z*9+3,3)-.47)*.035,0,1);
+      let c=grad(P_JUP,vv);
+      /* Bintik Merah Besar */
+      let du=Math.abs(u-.31);du=Math.min(du,1-du);
+      const dd=Math.pow(du*7.5,2)+Math.pow((v-.62)*11,2);
+      if(dd<1){
+        c=mixc(c,[206,94,64],(1-dd)*.85);
+        c=mixc(c,[238,178,140],smooth(.45,.95,dd)*.4);
+      }
+      const b=.94+(fbm(x*14+4,y*14,z*14,2)-.47)*.16;
+      put(d,i,[c[0]*b,c[1]*b,c[2]*b]);
+    })};
+  },
+  saturn(){
+    return {map:paintSphere(384,192,(d,i,x,y,z,u,v)=>{
+      const vv=clamp(v+(fbm(x*3,y*3,z*3+5,4)-.47)*.07,0,1);
+      const c=grad(P_SAT,vv);
+      const b=.96+(fbm(x*11+8,y*11,z*11,2)-.47)*.1;
+      put(d,i,[c[0]*b,c[1]*b,c[2]*b]);
+    })};
+  },
+  uranus(){
+    return {map:paintSphere(256,128,(d,i,x,y,z,u,v)=>{
+      const n=fbm(x*3,y*3,z*3,3);
+      let c=mixc([138,192,204],[172,218,224],clamp(.25+v*.5+(n-.47)*.25,0,1));
+      put(d,i,c);
+    })};
+  },
+  neptune(){
+    return {map:paintSphere(320,160,(d,i,x,y,z,u,v)=>{
+      const vv=clamp(v+(fbm(x*3,y*3,z*3+2,4)-.47)*.1,0,1);
+      let c=grad(P_NEP,vv);
+      const s=fbm(x*8,y*8,z*8+5,4);
+      if(s>.6)c=mixc(c,[192,212,242],(s-.6)*1.4);
+      let du=Math.abs(u-.7);du=Math.min(du,1-du);
+      const dd=Math.pow(du*9,2)+Math.pow((v-.64)*12,2);
+      if(dd<1)c=mixc(c,[22,38,108],(1-dd)*.5);
+      put(d,i,c);
+    })};
+  },
+  pluto(){
+    return {map:paintSphere(256,128,(d,i,x,y,z,u,v)=>{
+      const n=fbm(x*2.8,y*2.8,z*2.8,4),m=fbm(x*2.6+6,y*2.6,z*2.6,4);
+      let c=grad(P_PLU,clamp(n*1.15,0,1));
+      if(m>.6)c=mixc(c,[86,52,40],smooth(.6,.76,m)*.7);
+      let du=Math.abs(u-.5);du=Math.min(du,1-du);
+      const dd=Math.pow(du*4.4,2)+Math.pow((v-.58)*5.2,2); /* "jantung" Sputnik */
+      if(dd<1)c=mixc(c,[240,228,208],(1-dd)*.9);
+      put(d,i,c);
+    })};
+  },
+  luna(){
+    const c=paintSphere(320,160,(d,i,x,y,z)=>{
+      let g=128+fbm(x*4.5,y*4.5,z*4.5,4)*58;
+      const m=fbm(x*2.1+4,y*2.1,z*2.1,4);
+      if(m>.58)g*=1-smooth(.58,.74,m)*.42; /* maria */
+      put(d,i,[g,g,g*1.02]);
+    });
+    addCraters(c,260,7,'40,40,42','210,210,214');
+    return {map:c};
+  },
+  io(){
+    const c=paintSphere(256,128,(d,i,x,y,z)=>{
+      const n=fbm(x*3.5,y*3.5,z*3.5,4);
+      let cc=grad(P_IO,clamp(n*1.2,0,1));
+      const r=fbm(x*4+9,y*4,z*4,4),w=fbm(x*5+17,y*5,z*5,3);
+      if(r>.64)cc=mixc(cc,[176,70,28],smooth(.64,.78,r)*.85);
+      if(w>.7)cc=mixc(cc,[242,240,222],smooth(.7,.8,w)*.7);
+      put(d,i,cc);
+    });
+    addCraters(c,36,19,'30,16,8','240,220,140');
+    return {map:c};
+  },
+  europa(){
+    const c=paintSphere(256,128,(d,i,x,y,z)=>{
+      const n=fbm(x*3,y*3,z*3,4),m=fbm(x*2.2+5,y*2.2,z*2.2,4);
+      let cc=[218+n*16,214+n*14,206+n*12];
+      if(m>.62)cc=mixc(cc,[196,160,120],smooth(.62,.78,m)*.4);
+      put(d,i,cc);
+    });
+    addCracks(c,90,23,'150,82,48');
+    return {map:c};
+  },
+  ganymede(){
+    const c=paintSphere(256,128,(d,i,x,y,z)=>{
+      const n=fbm(x*3.2,y*3.2,z*3.2,4),m=fbm(x*2+11,y*2,z*2,3);
+      let cc=mixc([106,98,90],[170,160,148],clamp(n*1.2,0,1));
+      if(m>.58)cc=mixc(cc,[196,188,176],smooth(.58,.74,m)*.5);
+      put(d,i,cc);
+    });
+    addCraters(c,70,31,'58,54,50','230,226,220');
+    return {map:c};
+  },
+  callisto(){
+    const c=paintSphere(256,128,(d,i,x,y,z)=>{
+      const n=fbm(x*3.4,y*3.4,z*3.4,4),h=vnoise(x*22,y*22,z*22);
+      let cc=mixc([94,86,78],[142,132,120],clamp(n*1.2,0,1));
+      if(h>.8)cc=mixc(cc,[212,202,188],(h-.8)*4);
+      put(d,i,cc);
+    });
+    addCraters(c,130,41,'44,40,36','214,206,194');
+    return {map:c};
+  },
+  titan(){
+    return {map:paintSphere(256,128,(d,i,x,y,z,u,v,lat)=>{
+      const n=fbm(x*3,y*3,z*3,3),pole=smooth(.9,1.35,Math.abs(lat));
+      let c=mixc([198,142,60],[226,184,106],clamp(.3+n*.7,0,1));
+      c=mixc(c,[230,208,162],pole*.5);
+      put(d,i,c);
+    })};
+  },
+  comet(){
+    const c=paintSphere(128,64,(d,i,x,y,z)=>{
+      const g=66+fbm(x*6,y*6,z*6,4)*70;
+      put(d,i,[g,g*1.02,g*1.06]);
+    });
+    addCraters(c,30,53,'20,20,24','150,150,160');
+    return {map:c};
+  }
+};
+/* tekstur cincin (gradien radial 1D) */
+function ringSaturnTex(){
+  const w=512,c=document.createElement('canvas');c.width=w;c.height=16;
+  const ctx=c.getContext('2d'),img=ctx.createImageData(w,16),d=img.data;
+  for(let x=0;x<w;x++){
+    const t=x/(w-1),g=hash3(x*.37,1,7),gr=.88+g*.24;
+    let a=0,base=[216,196,164];
+    if(t<.05)a=0;
+    else if(t<.27){a=46+g*40;base=[188,172,148]}      /* cincin C */
+    else if(t<.30)a=46+smooth(.27,.30,t)*150;
+    else if(t<.55)a=204+g*34;                          /* cincin B */
+    else if(t<.615)a=20+g*10;                          /* celah Cassini */
+    else if(t<.86){a=162+g*28;if(t>.795&&t<.812)a=32}  /* cincin A + celah Encke */
+    else a=(162)*(1-smooth(.86,1,t));
+    for(let y=0;y<16;y++)put(d,(y*w+x)*4,[base[0]*gr,base[1]*gr,base[2]*gr],clamp(a,0,255));
+  }
+  ctx.putImageData(img,0,0);return c;
+}
+function ringUranusTex(){
+  const w=256,c=document.createElement('canvas');c.width=w;c.height=8;
+  const ctx=c.getContext('2d'),img=ctx.createImageData(w,8),d=img.data;
+  for(let x=0;x<w;x++){
+    const t=x/(w-1);let a=0;
+    if(t>.9&&t<.955)a=128;        /* cincin epsilon */
+    else if(t>.42&&t<.435)a=44;
+    else if(t>.55&&t<.562)a=40;
+    for(let y=0;y<8;y++)put(d,(y*w+x)*4,[172,188,202],a);
+  }
+  ctx.putImageData(img,0,0);return c;
+}
+
+/* ============================================================
+   BAGIAN 3 · DATA BENDA LANGIT & PEMBANGUN SCENE
+   ============================================================ */
+const $=id=>document.getElementById(id);
+const labelsEl=$('labels');
+let renderer,scene,camera,MAXANI=1;
+const BODIES=[],byName={},hitList=[];
+let belts=null,kuiper=null,gridGrp=null,starsGrp=null,sunCore=null,sunHalo=null;
+let cometComa=null,cometTail=null,tailDat=null;
+let sizeMul=1;
+function ctex(c){const t=new THREE.CanvasTexture(c);t.anisotropy=MAXANI;t.wrapS=THREE.RepeatWrapping;return t}
+
+const CFG=[
+ {id:'Matahari',kind:'sun',tipe:'BINTANG \u00b7 G2V',grp:'Bintang',rKm:696340,color:'#ffcf6f',rotH:609.12,tilt:7.25,tex:'sun',
+  facts:[['Diameter','1.392.700 km'],['Massa','1,99 \u00d7 10\u00b3\u2070 kg'],['Gravitasi permukaan','274 m/s\u00b2'],['Rotasi (ekuator)','\u00b125,4 hari'],['Kelas spektral','G2V'],['Suhu fotosfer','5.505 \u00b0C'],['Usia','\u00b14,6 miliar tahun']],
+  desc:'Bintang deret utama tipe G yang menampung 99,86% massa tata surya. Cahayanya butuh sekitar 8,3 menit untuk mencapai Bumi.'},
+ {id:'Merkurius',kind:'planet',tipe:'PLANET KE-1 \u00b7 BATUAN',grp:'Planet',el:'Merkurius',rKm:2439.7,color:'#b3a89a',rotH:1407.6,tilt:.03,tex:'mercury',
+  facts:[['Diameter','4.879 km'],['Massa','3,30 \u00d7 10\u00b2\u00b3 kg'],['Gravitasi','3,7 m/s\u00b2'],['Rotasi','58,6 hari'],['Periode orbit','88,0 hari'],['Suhu rata-rata','167 \u00b0C'],['Satelit alami','0']],
+  desc:'Planet terkecil sekaligus terdekat dari Matahari. Nyaris tanpa atmosfer, suhunya berayun dari -180 \u00b0C hingga 430 \u00b0C.'},
+ {id:'Venus',kind:'planet',tipe:'PLANET KE-2 \u00b7 BATUAN',grp:'Planet',el:'Venus',rKm:6051.8,color:'#eed9a6',rotH:5832.5,tilt:177.4,tex:'venus',
+  facts:[['Diameter','12.104 km'],['Massa','4,87 \u00d7 10\u00b2\u2074 kg'],['Gravitasi','8,9 m/s\u00b2'],['Rotasi','243 hari (retrograde)'],['Periode orbit','224,7 hari'],['Suhu rata-rata','464 \u00b0C'],['Satelit alami','0']],
+  desc:'Planet terpanas akibat efek rumah kaca CO\u2082 ekstrem. Rotasinya retrograde dan sangat lambat \u2014 satu hari Venus lebih panjang dari satu tahunnya.'},
+ {id:'Bumi',kind:'planet',tipe:'PLANET KE-3 \u00b7 BATUAN',grp:'Planet',el:'Bumi',rKm:6371,color:'#6fb7ff',rotH:23.934,tilt:23.44,tex:'earth',
+  facts:[['Diameter','12.756 km'],['Massa','5,97 \u00d7 10\u00b2\u2074 kg'],['Gravitasi','9,8 m/s\u00b2'],['Rotasi','23,9 jam'],['Periode orbit','365,25 hari'],['Suhu rata-rata','15 \u00b0C'],['Satelit alami','1 (Bulan)']],
+  desc:'Satu-satunya tempat yang diketahui menampung kehidupan; 71% permukaannya tertutup samudra.'},
+ {id:'Mars',kind:'planet',tipe:'PLANET KE-4 \u00b7 BATUAN',grp:'Planet',el:'Mars',rKm:3389.5,color:'#ff8d66',rotH:24.623,tilt:25.19,tex:'mars',
+  facts:[['Diameter','6.792 km'],['Massa','6,42 \u00d7 10\u00b2\u00b3 kg'],['Gravitasi','3,7 m/s\u00b2'],['Rotasi','24,6 jam'],['Periode orbit','687 hari'],['Suhu rata-rata','-65 \u00b0C'],['Satelit alami','2 (Phobos & Deimos)']],
+  desc:'Planet merah dengan gunung tertinggi di tata surya, Olympus Mons (\u00b122 km), dan lembah raksasa Valles Marineris.'},
+ {id:'Jupiter',kind:'planet',tipe:'PLANET KE-5 \u00b7 GAS RAKSASA',grp:'Planet',el:'Jupiter',rKm:69911,color:'#e8bd92',rotH:9.925,tilt:3.13,tex:'jupiter',
+  facts:[['Diameter','142.984 km'],['Massa','1,90 \u00d7 10\u00b2\u2077 kg'],['Gravitasi','23,1 m/s\u00b2'],['Rotasi','9,9 jam'],['Periode orbit','11,9 tahun'],['Suhu rata-rata','-110 \u00b0C'],['Satelit alami','95']],
+  desc:'Planet terbesar \u2014 massanya 2,5\u00d7 gabungan seluruh planet lain. Bintik Merah Besar adalah badai yang telah mengamuk ratusan tahun.'},
+ {id:'Saturnus',kind:'planet',tipe:'PLANET KE-6 \u00b7 GAS RAKSASA',grp:'Planet',el:'Saturnus',rKm:58232,color:'#ecd9a4',rotH:10.656,tilt:26.73,tex:'saturn',ring:'saturn',
+  facts:[['Diameter','120.536 km'],['Massa','5,68 \u00d7 10\u00b2\u2076 kg'],['Gravitasi','9,0 m/s\u00b2'],['Rotasi','10,7 jam'],['Periode orbit','29,4 tahun'],['Suhu rata-rata','-140 \u00b0C'],['Satelit alami','274']],
+  desc:'Pemilik sistem cincin es paling megah. Massa jenis rata-ratanya lebih rendah daripada air.'},
+ {id:'Uranus',kind:'planet',tipe:'PLANET KE-7 \u00b7 RAKSASA ES',grp:'Planet',el:'Uranus',rKm:25362,color:'#93e2e6',rotH:17.24,tilt:97.77,tex:'uranus',ring:'uranus',
+  facts:[['Diameter','51.118 km'],['Massa','8,68 \u00d7 10\u00b2\u2075 kg'],['Gravitasi','8,7 m/s\u00b2'],['Rotasi','17,2 jam (retrograde)'],['Periode orbit','84,0 tahun'],['Suhu rata-rata','-195 \u00b0C'],['Satelit alami','28']],
+  desc:'Raksasa es yang \u201cmenggelinding\u201d \u2014 sumbunya miring 97,8\u00b0 sehingga kutubnya bergantian menghadap Matahari. Cincin tipisnya tampak nyaris vertikal.'},
+ {id:'Neptunus',kind:'planet',tipe:'PLANET KE-8 \u00b7 RAKSASA ES',grp:'Planet',el:'Neptunus',rKm:24622,color:'#6f8cff',rotH:16.11,tilt:28.32,tex:'neptune',
+  facts:[['Diameter','49.528 km'],['Massa','1,02 \u00d7 10\u00b2\u2076 kg'],['Gravitasi','11,0 m/s\u00b2'],['Rotasi','16,1 jam'],['Periode orbit','164,8 tahun'],['Suhu rata-rata','-200 \u00b0C'],['Satelit alami','16']],
+  desc:'Planet terjauh dari Matahari, dengan angin tercepat di tata surya \u2014 melebihi 2.000 km/jam.'},
+ {id:'Pluto',kind:'dwarf',tipe:'PLANET KERDIL \u00b7 SABUK KUIPER',grp:'Planet kerdil',el:'Pluto',rKm:1188.3,color:'#c8b5a5',rotH:153.29,tilt:122.5,tex:'pluto',
+  facts:[['Diameter','2.376 km'],['Massa','1,31 \u00d7 10\u00b2\u00b2 kg'],['Gravitasi','0,62 m/s\u00b2'],['Rotasi','6,4 hari (retrograde)'],['Periode orbit','248 tahun'],['Suhu rata-rata','-225 \u00b0C'],['Satelit alami','5']],
+  desc:'Planet kerdil di Sabuk Kuiper; direklasifikasi dari planet pada 2006. Memiliki \u201cjantung\u201d nitrogen beku bernama Sputnik Planitia.'},
+ {id:'Komet Halley',kind:'comet',tipe:'KOMET PERIODIK \u00b7 1P',grp:'Komet',rKm:5.5,color:'#9fd6ff',rotH:52.8,tilt:0,tex:'comet',
+  facts:[['Ukuran inti','\u00b115 \u00d7 8 km'],['Periode orbit','\u00b175 tahun'],['Eksentrisitas','0,967'],['Inklinasi','162\u00b0 (retrograde)'],['Perihelion terakhir','9 Feb 1986'],['Perihelion berikutnya','\u00b1Jul 2061']],
+  desc:'Komet periodik paling terkenal. Ekornya tumbuh saat jaraknya < 5 SA dari Matahari dan selalu mengarah menjauhi Matahari.'}
+];
+const MOONS=[
+ {id:'Bulan',parent:'Bumi',rKm:1737.4,color:'#ccd2da',distF:3.2,P:27.322,phase:.7,tex:'luna',spd:'1,0 km/s',
+  facts:[['Diameter','3.475 km'],['Periode orbit','27,3 hari'],['Induk','Bumi']],
+  desc:'Satu-satunya satelit alami Bumi, terkunci pasang surut \u2014 sisi yang sama selalu menghadap Bumi.'},
+ {id:'Io',parent:'Jupiter',rKm:1821.6,color:'#e6c46a',distF:2.05,P:1.769,phase:2.1,tex:'io',spd:'17,3 km/s',
+  facts:[['Diameter','3.643 km'],['Periode orbit','1,77 hari'],['Induk','Jupiter']],
+  desc:'Benda paling vulkanik di tata surya akibat pemanasan pasang surut Jupiter.'},
+ {id:'Europa',parent:'Jupiter',rKm:1560.8,color:'#ded7c8',distF:2.65,P:3.551,phase:4.4,tex:'europa',spd:'13,7 km/s',
+  facts:[['Diameter','3.122 km'],['Periode orbit','3,55 hari'],['Induk','Jupiter']],
+  desc:'Permukaan es yang retak-retak; di bawahnya diduga ada samudra air asin global.'},
+ {id:'Ganymede',parent:'Jupiter',rKm:2634.1,color:'#b7a98f',distF:3.35,P:7.155,phase:.9,tex:'ganymede',spd:'10,9 km/s',
+  facts:[['Diameter','5.268 km'],['Periode orbit','7,2 hari'],['Induk','Jupiter']],
+  desc:'Satelit terbesar di tata surya \u2014 lebih besar dari Merkurius dan punya medan magnet sendiri.'},
+ {id:'Callisto',parent:'Jupiter',rKm:2410.3,color:'#9a8f80',distF:4.25,P:16.689,phase:3.4,tex:'callisto',spd:'8,2 km/s',
+  facts:[['Diameter','4.821 km'],['Periode orbit','16,7 hari'],['Induk','Jupiter']],
+  desc:'Permukaan paling tua dan paling padat kawah di tata surya.'},
+ {id:'Titan',parent:'Saturnus',rKm:2574.7,color:'#dcab62',distF:3.4,P:15.945,phase:1.6,tex:'titan',spd:'5,6 km/s',
+  facts:[['Diameter','5.150 km'],['Periode orbit','15,9 hari'],['Induk','Saturnus']],
+  desc:'Satelit dengan atmosfer tebal nitrogen dan danau metana cair di permukaannya.'}
+];
+
+const HITMAT=()=>new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false});
+function makeLabel(b,isMoon){
+  const el=document.createElement('div');
+  el.className='body-label'+(isMoon?' moonlab':'');
+  el.style.color=b.cfg.color;
+  el.innerHTML='<span class="dot"></span><span class="nm">'+b.cfg.id+'</span>';
+  el.addEventListener('click',ev=>{ev.stopPropagation();select(b,false)});
+  labelsEl.appendChild(el);
+  b.label=el;
+}
+function orbitPts(a,e,I,w,O,n){
+  const cw=Math.cos(w),sw=Math.sin(w),cO=Math.cos(O),sO=Math.sin(O),ci=Math.cos(I),si=Math.sin(I),pts=[];
+  for(let i=0;i<=n;i++){
+    const E=i/n*TAU,xp=a*(Math.cos(E)-e),yp=a*Math.sqrt(1-e*e)*Math.sin(E);
+    pts.push(v3({
+      x:(cw*cO-sw*sO*ci)*xp+(-sw*cO-cw*sO*ci)*yp,
+      y:(cw*sO+sw*cO*ci)*xp+(-sw*sO+cw*cO*ci)*yp,
+      z:(sw*si)*xp+(cw*si)*yp}));
+  }
+  return pts;
+}
+function rebuildOrbit(b,jd){
+  let pts;
+  if(b.kind==='comet')pts=orbitPts(HALLEY.a,HALLEY.e,HALLEY.I,HALLEY.w,HALLEY.O,420);
+  else{const q=elemAt(b.cfg.el,jd);pts=orbitPts(q.a,q.e,q.I,q.vp-q.O,q.O,256)}
+  b.orbit.geometry.setFromPoints(pts);
+  b.orbitJd=jd;
+}
+function buildSun(){
+  const cfg=CFG[0],vis=visR(cfg.rKm);
+  const group=new THREE.Group();scene.add(group);
+  const tiltG=new THREE.Group();tiltG.rotation.z=-cfg.tilt*D2R;group.add(tiltG);
+  const mesh=new THREE.Mesh(new THREE.SphereGeometry(vis,48,28),
+    new THREE.MeshBasicMaterial({map:ctex(TEXGEN.sun().map)}));
+  tiltG.add(mesh);
+  sunCore=new THREE.Sprite(new THREE.SpriteMaterial({map:ctex(radialSprite(256,[[0,'rgba(255,250,235,1)'],[.22,'rgba(255,226,160,.9)'],[.55,'rgba(255,172,72,.32)'],[1,'rgba(255,140,40,0)']])),
+    blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));
+  sunCore.scale.set(vis*5,vis*5,1);group.add(sunCore);
+  sunHalo=new THREE.Sprite(new THREE.SpriteMaterial({map:ctex(radialSprite(256,[[0,'rgba(255,190,90,.5)'],[.5,'rgba(255,150,60,.14)'],[1,'rgba(255,120,40,0)']])),
+    blending:THREE.AdditiveBlending,transparent:true,depthWrite:false,opacity:.9}));
+  sunHalo.scale.set(vis*12,vis*12,1);group.add(sunHalo);
+  const hit=new THREE.Mesh(new THREE.SphereGeometry(vis*1.15,12,8),HITMAT());
+  group.add(hit);
+  scene.add(new THREE.PointLight(0xfff2dd,1.9,0,0));
+  scene.add(new THREE.AmbientLight(0x42506e,.5));
+  const b={cfg,kind:'sun',group,tiltG,mesh,vis,worldPos:new THREE.Vector3(),hit};
+  hit.userData.b=b;hitList.push(hit);
+  makeLabel(b,false);
+  BODIES.push(b);byName[cfg.id]=b;
+}
+const ATM_VS='varying vec3 vN;varying vec3 vP;void main(){vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.0);vP=mv.xyz;gl_Position=projectionMatrix*mv;}';
+const ATM_FS='uniform vec3 col;varying vec3 vN;varying vec3 vP;void main(){float f=1.0-abs(dot(normalize(vN),normalize(-vP)));float a=pow(clamp(f,0.0,1.0),3.0)*0.9;gl_FragColor=vec4(col,a);}';
+function buildPlanet(cfg){
+  const vis=visR(cfg.rKm);
+  const group=new THREE.Group();scene.add(group);
+  const tiltG=new THREE.Group();tiltG.rotation.z=-cfg.tilt*D2R;group.add(tiltG);
+  const tx=TEXGEN[cfg.tex]();
+  const mat=new THREE.MeshPhongMaterial({map:ctex(tx.map),shininess:cfg.id==='Bumi'?24:6,
+    specular:new THREE.Color(cfg.id==='Bumi'?0x8fb3cc:0x111111)});
+  if(tx.spec)mat.specularMap=ctex(tx.spec);
+  const mesh=new THREE.Mesh(new THREE.SphereGeometry(vis,48,28),mat);
+  tiltG.add(mesh);
+  let clouds=null;
+  if(tx.clouds){
+    clouds=new THREE.Mesh(new THREE.SphereGeometry(vis*1.018,48,28),
+      new THREE.MeshLambertMaterial({map:ctex(tx.clouds),transparent:true,depthWrite:false}));
+    tiltG.add(clouds);
+  }
+  if(cfg.id==='Bumi'){
+    const atm=new THREE.Mesh(new THREE.SphereGeometry(vis*1.05,48,28),
+      new THREE.ShaderMaterial({uniforms:{col:{value:new THREE.Color(0x5fa8ff)}},
+        vertexShader:ATM_VS,fragmentShader:ATM_FS,side:THREE.BackSide,
+        transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
+    tiltG.add(atm);
+  }
+  if(cfg.ring){
+    const inner=cfg.ring==='saturn'?vis*1.45:vis*1.65,outer=cfg.ring==='saturn'?vis*2.32:vis*2.05;
+    const rg=new THREE.RingGeometry(inner,outer,160,1);
+    const p=rg.attributes.position,uv=rg.attributes.uv,tv=new THREE.Vector3();
+    for(let i=0;i<p.count;i++){tv.fromBufferAttribute(p,i);uv.setXY(i,(tv.length()-inner)/(outer-inner),.5)}
+    const ring=new THREE.Mesh(rg,new THREE.MeshBasicMaterial({
+      map:ctex(cfg.ring==='saturn'?ringSaturnTex():ringUranusTex()),
+      side:THREE.DoubleSide,transparent:true,depthWrite:false,opacity:.97}));
+    ring.rotation.x=-Math.PI/2;
+    tiltG.add(ring);
+  }
+  const hit=new THREE.Mesh(new THREE.SphereGeometry(Math.max(vis*2.6,2.4),12,8),HITMAT());
+  group.add(hit);
+  const orbit=new THREE.Line(new THREE.BufferGeometry(),
+    new THREE.LineBasicMaterial({color:new THREE.Color(cfg.color),transparent:true,opacity:.34}));
+  scene.add(orbit);
+  const b={cfg,kind:cfg.kind,group,tiltG,mesh,clouds,vis,orbit,orbitJd:-1e9,worldPos:new THREE.Vector3(),hit};
+  hit.userData.b=b;hitList.push(hit);
+  makeLabel(b,false);
+  BODIES.push(b);byName[cfg.id]=b;
+}
+function buildMoon(m){
+  const parent=byName[m.parent],vis=visR(m.rKm)*.75;
+  const group=new THREE.Group();parent.tiltG.add(group);
+  const mesh=new THREE.Mesh(new THREE.SphereGeometry(vis,32,18),
+    new THREE.MeshPhongMaterial({map:ctex(TEXGEN[m.tex]().map),shininess:5,specular:new THREE.Color(0x0d0d0d)}));
+  group.add(mesh);
+  const hit=new THREE.Mesh(new THREE.SphereGeometry(Math.max(vis*2.2,1.1),10,6),HITMAT());
+  group.add(hit);
+  const d=m.distF*parent.vis,cpts=[];
+  for(let i=0;i<=96;i++){const a=i/96*TAU;cpts.push(new THREE.Vector3(Math.cos(a)*d,0,-Math.sin(a)*d))}
+  const morb=new THREE.Line(new THREE.BufferGeometry().setFromPoints(cpts),
+    new THREE.LineBasicMaterial({color:new THREE.Color(m.color),transparent:true,opacity:.22}));
+  parent.tiltG.add(morb);
+  const b={cfg:m,kind:'moon',group,mesh,vis,parentBody:parent,moonOrbit:morb,worldPos:new THREE.Vector3(),hit};
+  hit.userData.b=b;hitList.push(hit);
+  makeLabel(b,true);
+  BODIES.push(b);byName[m.id]=b;
+}
+function buildComet(){
+  const cfg=CFG.find(c=>c.kind==='comet'),vis=.5;
+  const group=new THREE.Group();scene.add(group);
+  const mesh=new THREE.Mesh(new THREE.SphereGeometry(vis,24,14),
+    new THREE.MeshPhongMaterial({map:ctex(TEXGEN.comet().map),shininess:4}));
+  group.add(mesh);
+  const hit=new THREE.Mesh(new THREE.SphereGeometry(3,10,6),HITMAT());
+  group.add(hit);
+  cometComa=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:ctex(radialSprite(128,[[0,'rgba(228,246,255,.95)'],[.4,'rgba(150,200,255,.4)'],[1,'rgba(120,180,255,0)']])),
+    blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));
+  scene.add(cometComa);
+  const N=700,pos=new Float32Array(N*3),col=new Float32Array(N*3),R=rng(77);
+  const tt=new Float32Array(N),ra=new Float32Array(N),rb=new Float32Array(N);
+  for(let i=0;i<N;i++){
+    tt[i]=Math.pow(R(),1.35);ra[i]=R()*2-1;rb[i]=R()*2-1;
+    const f=Math.pow(1-tt[i],1.5)*.9+.08;
+    col[i*3]=.62*f;col[i*3+1]=.8*f;col[i*3+2]=f;
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3).setUsage(THREE.DynamicDrawUsage));
+  g.setAttribute('color',new THREE.BufferAttribute(col,3));
+  cometTail=new THREE.Points(g,new THREE.PointsMaterial({size:2.2,sizeAttenuation:false,
+    vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
+  cometTail.frustumCulled=false;cometTail.visible=false;
+  scene.add(cometTail);
+  tailDat={N,tt,ra,rb,pos:g.attributes.position};
+  const orbit=new THREE.Line(new THREE.BufferGeometry(),
+    new THREE.LineBasicMaterial({color:new THREE.Color(cfg.color),transparent:true,opacity:.3}));
+  scene.add(orbit);
+  const b={cfg,kind:'comet',group,mesh,vis,orbit,orbitJd:-1e9,worldPos:new THREE.Vector3(),hit};
+  hit.userData.b=b;hitList.push(hit);
+  makeLabel(b,false);
+  BODIES.push(b);byName[cfg.id]=b;
+  rebuildOrbit(b,0);
+}
+function makeBelt(n,r0,r1,ySpr,color,size,op,seed){
+  const R=rng(seed),pos=new Float32Array(n*3);
+  const r=new Float32Array(n),ph=new Float32Array(n),om=new Float32Array(n),yy=new Float32Array(n);
+  for(let i=0;i<n;i++){
+    const a=r0+R()*(r1-r0);
+    r[i]=a;ph[i]=R()*TAU;om[i]=TAU/(365.25*Math.pow(a,1.5));yy[i]=(R()*2-1)*ySpr*AU;
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3).setUsage(THREE.DynamicDrawUsage));
+  const obj=new THREE.Points(g,new THREE.PointsMaterial({color,size,sizeAttenuation:false,
+    transparent:true,opacity:op,depthWrite:false}));
+  obj.frustumCulled=false;
+  scene.add(obj);
+  return {obj,n,r,ph,om,yy,pos:g.attributes.position};
+}
+function updateBelt(b,jd){
+  const t=jd-J2000,p=b.pos.array;
+  for(let i=0;i<b.n;i++){
+    const a=b.ph[i]+b.om[i]*t,rr=b.r[i]*AU;
+    p[i*3]=Math.cos(a)*rr;p[i*3+1]=b.yy[i];p[i*3+2]=-Math.sin(a)*rr;
+  }
+  b.pos.needsUpdate=true;
+}
+function buildStars(){
+  starsGrp=new THREE.Group();scene.add(starsGrp);
+  const R=rng(2026);
+  function layer(count,size,op){
+    const pos=new Float32Array(count*3),col=new Float32Array(count*3);
+    for(let i=0;i<count;i++){
+      const z=R()*2-1,a=R()*TAU,s=Math.sqrt(1-z*z),rr=19000+R()*2200;
+      pos[i*3]=s*Math.cos(a)*rr;pos[i*3+1]=z*rr;pos[i*3+2]=s*Math.sin(a)*rr;
+      const t=R(),br=.55+R()*.45;
+      let c=t<.16?[1,.84,.68]:t<.3?[1,.95,.85]:t<.85?[.94,.96,1]:[.78,.87,1];
+      col[i*3]=c[0]*br;col[i*3+1]=c[1]*br;col[i*3+2]=c[2]*br;
+    }
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    g.setAttribute('color',new THREE.BufferAttribute(col,3));
+    starsGrp.add(new THREE.Points(g,new THREE.PointsMaterial({size,sizeAttenuation:false,
+      vertexColors:true,transparent:true,opacity:op,depthWrite:false})));
+  }
+  layer(5200,1.1,.78);layer(2600,1.7,.9);layer(800,2.6,1);
+  /* pita Bima Sakti */
+  const band=new THREE.Group();band.rotation.set(1.05,.3,.42);starsGrp.add(band);
+  const bn=2800,bp=new Float32Array(bn*3),bc=new Float32Array(bn*3);
+  for(let i=0;i<bn;i++){
+    const t=R()*TAU,gOff=(R()+R()+R()-1.5)/1.5*.14,rr=20400;
+    const cg=Math.cos(gOff),x=Math.cos(t)*cg*rr,y=Math.sin(gOff)*rr,zz=Math.sin(t)*cg*rr;
+    bp[i*3]=x;bp[i*3+1]=y;bp[i*3+2]=zz;
+    const br=(.35+R()*.6)*(.6+.4*vnoise(Math.cos(t)*3+9,Math.sin(t)*3,1));
+    bc[i*3]=.82*br;bc[i*3+1]=.86*br;bc[i*3+2]=br;
+  }
+  const bg=new THREE.BufferGeometry();
+  bg.setAttribute('position',new THREE.BufferAttribute(bp,3));
+  bg.setAttribute('color',new THREE.BufferAttribute(bc,3));
+  band.add(new THREE.Points(bg,new THREE.PointsMaterial({size:1.3,sizeAttenuation:false,
+    vertexColors:true,transparent:true,opacity:.6,depthWrite:false})));
+  const nebTex=ctex(radialSprite(128,[[0,'rgba(186,202,255,.5)'],[.6,'rgba(146,164,224,.16)'],[1,'rgba(120,140,200,0)']]));
+  for(let i=0;i<26;i++){
+    const t=R()*TAU,gOff=(R()*2-1)*.1,rr=20300,cg=Math.cos(gOff);
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:nebTex,transparent:true,
+      blending:THREE.AdditiveBlending,depthWrite:false,opacity:.04+R()*.07}));
+    sp.position.set(Math.cos(t)*cg*rr,Math.sin(gOff)*rr,Math.sin(t)*cg*rr);
+    const sc=1900+R()*2900;sp.scale.set(sc,sc,1);
+    band.add(sp);
+  }
+}
+function buildGrid(){
+  gridGrp=new THREE.Group();gridGrp.visible=false;scene.add(gridGrp);
+  const mat=new THREE.LineBasicMaterial({color:0x2a4055,transparent:true,opacity:.4});
+  for(const ra of [1,2,5,10,20,30,40]){
+    const pts=[];
+    for(let i=0;i<=128;i++){const a=i/128*TAU;pts.push(new THREE.Vector3(Math.cos(a)*ra*AU,0,Math.sin(a)*ra*AU))}
+    gridGrp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),mat));
+  }
+  for(let k=0;k<12;k++){
+    const a=k/12*TAU,pts=[new THREE.Vector3(Math.cos(a)*.5*AU,0,Math.sin(a)*.5*AU),
+      new THREE.Vector3(Math.cos(a)*42*AU,0,Math.sin(a)*42*AU)];
+    gridGrp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),mat));
+  }
+}
+
+/* ============================================================
+   BAGIAN 4 · KONTROL, UI, WAKTU & LOOP UTAMA
+   ============================================================ */
+const stage=$('stage'),loadingEl=$('loading'),loadingText=$('loadingText'),loadingBarI=$('loadingBar').firstElementChild,
+ splash=$('splash'),clockDate=$('clockDate'),clockTime=$('clockTime'),speedChip=$('speedChip'),chrono=$('chrono'),
+ datePopover=$('datePopover'),dateInput=$('dateInput'),sidebar=$('sidebar'),sidebarToggle=$('sidebarToggle'),
+ searchInput=$('searchInput'),bodyList=$('bodyList'),infoPanel=$('infoPanel'),reticleEl=$('reticle'),
+ toastEl=$('toast'),helpModal=$('helpModal'),helpClose=$('helpClose'),
+ btnOrbits=$('btnOrbits'),btnLabels=$('btnLabels'),btnGrid=$('btnGrid'),btnBelt=$('btnBelt'),btnMoons=$('btnMoons'),
+ btnSlower=$('btnSlower'),btnPause=$('btnPause'),btnFaster=$('btnFaster'),btnReal=$('btnReal'),btnNow=$('btnNow'),
+ btnTour=$('btnTour'),btnScale=$('btnScale'),scalePopover=$('scalePopover'),scaleRange=$('scaleRange'),scaleVal=$('scaleVal'),
+ btnShot=$('btnShot'),btnFull=$('btnFull'),btnHelp=$('btnHelp'),icPause=$('icPause'),icPlay=$('icPlay');
+
+const fmt=(n,d)=>n.toLocaleString('id-ID',{minimumFractionDigits:d,maximumFractionDigits:d});
+function fmtKm(km){return km>=1e9?fmt(km/1e9,2)+' miliar km':km>=1e6?fmt(km/1e6,1)+' juta km':fmt(km,0)+' km'}
+function fmtLight(km){const lm=km/C_KMS/60;return lm>=90?fmt(lm/60,1)+' jam cahaya':fmt(lm,1)+' menit cahaya'}
+
+/* ---------- waktu simulasi ---------- */
+const SPEEDS=[
+ {v:-315576000,l:'-10 thn/dtk'},{v:-31557600,l:'-1 thn/dtk'},{v:-2629800,l:'-1 bln/dtk'},
+ {v:-604800,l:'-1 mgg/dtk'},{v:-86400,l:'-1 hari/dtk'},{v:-3600,l:'-1 jam/dtk'},
+ {v:1,l:'Waktu nyata'},
+ {v:3600,l:'+1 jam/dtk'},{v:86400,l:'+1 hari/dtk'},{v:604800,l:'+1 mgg/dtk'},
+ {v:2629800,l:'+1 bln/dtk'},{v:31557600,l:'+1 thn/dtk'},{v:315576000,l:'+10 thn/dtk'}];
+const SPD_REAL=6,SPD_DAY=8,SPD_WEEK=9;
+let simJD=jdFromMs(Date.now()),spdIdx=SPD_DAY,paused=false;
+let selBody=null,liveRefs=null,splashTimer=null,toastT=null,edgeT=0;
+let showOrbits=true,showLabels=true,showGrid=false,showBelt=true,showMoons=true;
+let tourOn=false,tourT=0,tourIdx=-1;
+
+const DF=new Intl.DateTimeFormat('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+const TF=new Intl.DateTimeFormat('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+let lastClock=-1;
+function updChrono(){
+  const ms=msFromJd(simJD),tick=Math.floor(ms/250);
+  if(tick===lastClock)return;lastClock=tick;
+  const d=new Date(ms);
+  clockDate.textContent=DF.format(d);
+  clockTime.textContent=TF.format(d);
+  speedChip.textContent=paused?'JEDA':SPEEDS[spdIdx].l;
+}
+function toast(m){toastEl.textContent=m;toastEl.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.remove('show'),2300)}
+function updPauseIcon(){icPause.style.display=paused?'none':'';icPlay.style.display=paused?'':'none';btnPause.classList.toggle('on',paused);lastClock=-1}
+function setSpd(i){spdIdx=clamp(i,0,SPEEDS.length-1);paused=false;updPauseIcon();toast('Laju waktu: '+SPEEDS[spdIdx].l)}
+function edgeStop(m){const n=performance.now();if(n-edgeT>3000){edgeT=n;paused=true;updPauseIcon();toast(m)}}
+
+/* ---------- kamera ---------- */
+const cam={th:.9,ph:1.13,r:4200,tth:1.34,tph:1.1,tr:950,
+ tgt:new THREE.Vector3(),ttgt:new THREE.Vector3(),follow:null,panOff:new THREE.Vector3()};
+const ndc=new THREE.Vector2(),ray=new THREE.Raycaster();
+const tmpV=new THREE.Vector3(),T_DIR=new THREE.Vector3(),T_P1=new THREE.Vector3(),T_P2=new THREE.Vector3(),T_UP=new THREE.Vector3(),T_R=new THREE.Vector3();
+const VIEW=new THREE.Matrix4();
+let fovTan=1;
+function minRfor(b){return Math.max(b.vis*sizeMul*2.3,1.4)}
+function minR(){return cam.follow?minRfor(cam.follow):1.4}
+
+/* ---------- pembaruan benda per-frame ---------- */
+function spin(jd,rotH){return (TAU*((jd-J2000)*24/rotH))%TAU}
+function updateBodies(jd){
+  for(const b of BODIES){
+    if(b.kind==='planet'||b.kind==='dwarf'){
+      b.group.position.copy(v3(planetState(b.cfg.el,jd)));
+      b.mesh.rotation.y=spin(jd,b.cfg.rotH);
+      if(b.clouds)b.clouds.rotation.y=spin(jd,b.cfg.rotH*.88);
+      b.worldPos.copy(b.group.position);
+      if(Math.abs(jd-b.orbitJd)>3653)rebuildOrbit(b,jd);
+    }else if(b.kind==='moon'){
+      const a=TAU*((jd-J2000)/b.cfg.P)+b.cfg.phase,d=b.cfg.distF*b.parentBody.vis;
+      b.group.position.set(Math.cos(a)*d,0,-Math.sin(a)*d);
+      b.mesh.rotation.y=a+Math.PI;
+      b.group.getWorldPosition(b.worldPos);
+    }else if(b.kind==='sun'){
+      b.mesh.rotation.y=spin(jd,b.cfg.rotH);
+      b.worldPos.set(0,0,0);
+    }else if(b.kind==='comet'){
+      const p=halleyState(jd),rAU=Math.hypot(p.x,p.y,p.z);
+      b.group.position.copy(v3(p));b.worldPos.copy(b.group.position);
+      b.mesh.rotation.y=spin(jd,b.cfg.rotH);
+      cometComa.position.copy(b.worldPos);
+      const cs=clamp(34/(rAU*rAU),0,16)+1.2;
+      cometComa.scale.set(cs,cs,1);
+      cometComa.material.opacity=clamp(1.6/rAU,.12,.95);
+      updTail(b,rAU);
+    }
+  }
+}
+function updTail(b,rAU){
+  if(rAU>5.5){cometTail.visible=false;return}
+  cometTail.visible=true;
+  const L=clamp(150/(rAU*rAU),0,95);
+  T_DIR.copy(b.worldPos).normalize();
+  T_UP.set(0,1,0);if(Math.abs(T_DIR.y)>.9)T_UP.set(1,0,0);
+  T_P1.crossVectors(T_DIR,T_UP).normalize();
+  T_P2.crossVectors(T_DIR,T_P1);
+  const arr=tailDat.pos.array;
+  for(let i=0;i<tailDat.N;i++){
+    const t=tailDat.tt[i],s=t*L*.17,m=t*L;
+    arr[i*3]  =b.worldPos.x+T_DIR.x*m+T_P1.x*tailDat.ra[i]*s+T_P2.x*tailDat.rb[i]*s;
+    arr[i*3+1]=b.worldPos.y+T_DIR.y*m+T_P1.y*tailDat.ra[i]*s+T_P2.y*tailDat.rb[i]*s;
+    arr[i*3+2]=b.worldPos.z+T_DIR.z*m+T_P1.z*tailDat.ra[i]*s+T_P2.z*tailDat.rb[i]*s;
+  }
+  tailDat.pos.needsUpdate=true;
+  cometTail.material.opacity=clamp((5.5-rAU)/4,0,1)*.95;
+}
+
+/* ---------- seleksi & panel info ---------- */
+function buildInfo(b){
+  const c=b.cfg,isSun=b.kind==='sun',isEarth=c.id==='Bumi';
+  let live='<div class="live-grid">';
+  if(!isSun)live+='<div class="live-item"><div class="lv-k">Jarak dari Matahari</div><div class="lv-v" id="lvA">\u2014</div><div class="lv-s" id="lvAs"></div></div>';
+  if(!isEarth)live+='<div class="live-item"><div class="lv-k">Jarak dari Bumi</div><div class="lv-v" id="lvB">\u2014</div><div class="lv-s" id="lvBs"></div></div>';
+  live+='<div class="live-item"><div class="lv-k">Kecepatan orbit</div><div class="lv-v" id="lvC">\u2014</div><div class="lv-s" id="lvCs"></div></div></div>';
+  const rows='<div class="fact-rows">'+c.facts.map(f=>'<div class="fact-row"><span class="fk">'+f[0]+'</span><span class="fv">'+f[1]+'</span></div>').join('')+'</div>';
+  let act='<div class="ip-actions">';
+  if(b.kind==='comet')act+='<button class="ip-btn amber" id="ipPeri">Lompat ke perihelion 2061</button>';
+  act+='<button class="ip-btn" id="ipZoom">Zoom dekat</button><button class="ip-btn" id="ipFree">Lepas pilihan (Esc)</button></div>';
+  infoPanel.innerHTML='<div class="ip-head"><span class="bd" style="background:'+c.color+';box-shadow:0 0 9px '+c.color+'"></span>'+
+    '<div><h3>'+c.id+'</h3><div class="ip-type">'+c.tipe+'</div></div></div>'+
+    live+rows+'<div class="ip-desc">'+c.desc+'</div>'+act;
+  infoPanel.classList.add('open');
+  liveRefs={A:$('lvA'),As:$('lvAs'),B:$('lvB'),Bs:$('lvBs'),C:$('lvC'),Cs:$('lvCs')};
+  $('ipZoom').onclick=()=>{cam.tr=clamp(Math.max(b.vis*sizeMul*3.4,minRfor(b)),minRfor(b),26000)};
+  $('ipFree').onclick=deselect;
+  const jp=$('ipPeri');
+  if(jp)jp.onclick=()=>{
+    simJD=nextHalleyPeri(simJD)-120;lastClock=-1;
+    spdIdx=SPD_WEEK;paused=false;updPauseIcon();
+    toast('120 hari sebelum perihelion \u2014 saksikan ekornya tumbuh');
+  };
+}
+function select(b,tight){
+  if(selBody&&selBody.label)selBody.label.classList.remove('sel');
+  selBody=b;cam.follow=b;cam.panOff.set(0,0,0);
+  cam.tr=clamp(Math.max(b.vis*sizeMul*(tight?3.4:9),2.6),minRfor(b),26000);
+  buildInfo(b);
+  b.label.classList.add('sel');
+  bodyList.querySelectorAll('.body-row').forEach(r=>r.classList.toggle('sel',r.dataset.id===b.cfg.id));
+  reticleEl.classList.add('on');
+}
+function deselect(){
+  if(selBody&&selBody.label)selBody.label.classList.remove('sel');
+  selBody=null;cam.follow=null;liveRefs=null;
+  infoPanel.classList.remove('open');
+  reticleEl.classList.remove('on');
+  bodyList.querySelectorAll('.body-row.sel').forEach(r=>r.classList.remove('sel'));
+}
+function updLive(){
+  if(!selBody||!liveRefs)return;
+  const b=selBody,rAU=b.worldPos.length()/AU;
+  if(liveRefs.A){liveRefs.A.textContent=fmt(rAU,rAU<10?3:2)+' SA';liveRefs.As.textContent=fmtKm(rAU*AU_KM)}
+  if(liveRefs.B){
+    const dAU=b.worldPos.distanceTo(byName['Bumi'].worldPos)/AU;
+    liveRefs.B.textContent=fmt(dAU,dAU<10?3:2)+' SA';
+    liveRefs.Bs.textContent=fmtKm(dAU*AU_KM)+' \u00b7 '+fmtLight(dAU*AU_KM);
+  }
+  if(b.kind==='sun'){liveRefs.C.textContent='\u2014';liveRefs.Cs.textContent='pusat massa tata surya'}
+  else if(b.kind==='moon'){liveRefs.C.textContent=b.cfg.spd;liveRefs.Cs.textContent='rata-rata, relatif '+b.cfg.parent}
+  else{
+    const a=b.kind==='comet'?HALLEY.a:elemAt(b.cfg.el,simJD).a;
+    const v=Math.sqrt(GM_SUN*(2/(rAU*AU_KM)-1/(a*AU_KM)));
+    liveRefs.C.textContent=fmt(v,1)+' km/s';liveRefs.Cs.textContent='vis-viva \u00b7 heliosentris';
+  }
+}
+
+/* ---------- sidebar ---------- */
+function buildSidebar(){
+  const groups=[['Bintang',['Matahari']],
+    ['Planet',['Merkurius','Venus','Bumi','Mars','Jupiter','Saturnus','Uranus','Neptunus']],
+    ['Planet kerdil',['Pluto']],
+    ['Satelit',MOONS.map(m=>m.id)],
+    ['Komet',['Komet Halley']]];
+  let h='';
+  for(const[g,ids]of groups){
+    h+='<div class="grp">'+g+'</div>';
+    for(const id of ids){
+      const b=byName[id],tp=b.kind==='moon'?b.cfg.parent:'';
+      h+='<button class="body-row" data-id="'+id+'"><span class="bd" style="color:'+b.cfg.color+'"></span><span>'+id+'</span><span class="tp">'+tp+'</span></button>';
+    }
+  }
+  bodyList.innerHTML=h;
+  bodyList.querySelectorAll('.body-row').forEach(r=>r.addEventListener('click',()=>select(byName[r.dataset.id],false)));
+}
+searchInput.addEventListener('input',()=>{
+  const q=searchInput.value.trim().toLowerCase();
+  bodyList.querySelectorAll('.body-row').forEach(r=>{r.style.display=r.dataset.id.toLowerCase().includes(q)?'':'none'});
+  bodyList.querySelectorAll('.grp').forEach(g=>{
+    let el=g.nextElementSibling,vis=false;
+    while(el&&!el.classList.contains('grp')){if(el.style.display!=='none')vis=true;el=el.nextElementSibling}
+    g.style.display=vis?'':'none';
+  });
+});
+function refreshSbToggle(){sidebarToggle.classList.toggle('shown',sidebar.classList.contains('hidden'))}
+sidebarToggle.addEventListener('click',()=>{sidebar.classList.remove('hidden');refreshSbToggle()});
+sidebar.querySelector('.sb-head').style.cursor='pointer';
+sidebar.querySelector('.sb-head').addEventListener('click',()=>{sidebar.classList.add('hidden');refreshSbToggle()});
+
+/* ---------- toggle tampilan ---------- */
+function applyVis(){
+  for(const b of BODIES){
+    if(b.orbit)b.orbit.visible=showOrbits;
+    if(b.kind==='moon'){b.group.visible=showMoons;b.moonOrbit.visible=showOrbits&&showMoons}
+  }
+  labelsEl.style.display=showLabels?'':'none';
+  if(gridGrp)gridGrp.visible=showGrid;
+  if(belts){belts.obj.visible=showBelt;kuiper.obj.visible=showBelt}
+  btnOrbits.classList.toggle('on',showOrbits);btnLabels.classList.toggle('on',showLabels);
+  btnGrid.classList.toggle('on',showGrid);btnBelt.classList.toggle('on',showBelt);
+  btnMoons.classList.toggle('on',showMoons);
+}
+function tgOrbits(){showOrbits=!showOrbits;applyVis();toast('Garis orbit: '+(showOrbits?'aktif':'mati'))}
+function tgLabels(){showLabels=!showLabels;applyVis();toast('Nama objek: '+(showLabels?'aktif':'mati'))}
+function tgGrid(){showGrid=!showGrid;applyVis();toast('Grid ekliptika: '+(showGrid?'aktif':'mati'))}
+function tgBelt(){showBelt=!showBelt;applyVis();toast('Sabuk asteroid & Kuiper: '+(showBelt?'aktif':'mati'))}
+function tgMoons(){
+  showMoons=!showMoons;
+  if(!showMoons&&selBody&&selBody.kind==='moon')deselect();
+  applyVis();toast('Satelit alami: '+(showMoons?'aktif':'mati'));
+}
+btnOrbits.addEventListener('click',tgOrbits);btnLabels.addEventListener('click',tgLabels);
+btnGrid.addEventListener('click',tgGrid);btnBelt.addEventListener('click',tgBelt);
+btnMoons.addEventListener('click',tgMoons);
+
+/* ---------- kontrol waktu & popover ---------- */
+btnSlower.addEventListener('click',()=>setSpd(spdIdx-1));
+btnFaster.addEventListener('click',()=>setSpd(spdIdx+1));
+btnReal.addEventListener('click',()=>setSpd(SPD_REAL));
+btnNow.addEventListener('click',()=>{simJD=jdFromMs(Date.now());lastClock=-1;toast('Disetel ke saat ini')});
+btnPause.addEventListener('click',()=>{paused=!paused;updPauseIcon()});
+function toLocalInput(d){
+  const p=n=>String(n).padStart(2,'0');
+  return String(d.getFullYear()).padStart(4,'0')+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+}
+chrono.addEventListener('click',()=>{
+  const open=datePopover.classList.toggle('open');
+  if(open)dateInput.value=toLocalInput(new Date(msFromJd(simJD)));
+});
+dateInput.addEventListener('change',()=>{
+  const d=new Date(dateInput.value);
+  if(!isNaN(d)){simJD=clamp(jdFromMs(d.getTime()),JD_MIN,JD_MAX);lastClock=-1;toast('Tanggal simulasi diatur')}
+});
+btnScale.addEventListener('click',()=>{
+  const open=scalePopover.classList.toggle('open');
+  btnScale.classList.toggle('on',open);
+});
+scaleRange.addEventListener('input',()=>{
+  sizeMul=parseFloat(scaleRange.value);
+  scaleVal.textContent=fmt(sizeMul,1)+'\u00d7';
+  applyScale();
+});
+function applyScale(){for(const b of BODIES)if(b.kind!=='moon')b.group.scale.setScalar(sizeMul)}
+
+/* ---------- tur, tangkapan layar, layar penuh, bantuan ---------- */
+const TOUR=['Merkurius','Venus','Bumi','Mars','Jupiter','Saturnus','Uranus','Neptunus','Pluto','Komet Halley'];
+function tourStep(){tourIdx=(tourIdx+1)%TOUR.length;select(byName[TOUR[tourIdx]],false);tourT=0}
+btnTour.addEventListener('click',()=>{
+  tourOn=!tourOn;btnTour.classList.toggle('on',tourOn);
+  if(tourOn){toast('Tur otomatis: tiap 9 detik');tourStep()}else toast('Tur otomatis berhenti');
+});
+btnShot.addEventListener('click',()=>{
+  renderer.render(scene,camera);
+  const a=document.createElement('a');
+  a.href=renderer.domElement.toDataURL('image/png');
+  a.download='tata-surya-'+new Date(msFromJd(simJD)).toISOString().slice(0,10)+'.png';
+  document.body.appendChild(a);a.click();a.remove();
+  toast('Tangkapan layar disimpan');
+});
+btnFull.addEventListener('click',()=>{
+  if(document.fullscreenElement)document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(()=>toast('Layar penuh tidak tersedia'));
+});
+btnHelp.addEventListener('click',()=>helpModal.classList.toggle('open'));
+helpClose.addEventListener('click',()=>helpModal.classList.remove('open'));
+helpModal.addEventListener('click',e=>{if(e.target===helpModal)helpModal.classList.remove('open')});
+
+/* ---------- interaksi pointer ---------- */
+const ptrs=new Map();let moved=0,pinchD=0,dragBtn=0;
+stage.addEventListener('contextmenu',e=>e.preventDefault());
+stage.addEventListener('pointerdown',e=>{
+  stage.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===1){moved=0;dragBtn=e.button}
+  else if(ptrs.size===2){const a=[...ptrs.values()];pinchD=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)}
+});
+stage.addEventListener('pointermove',e=>{
+  const pr=ptrs.get(e.pointerId);if(!pr)return;
+  const dx=e.clientX-pr.x,dy=e.clientY-pr.y;pr.x=e.clientX;pr.y=e.clientY;
+  if(ptrs.size===1){
+    moved+=Math.abs(dx)+Math.abs(dy);
+    if(dragBtn===2){
+      const k=cam.r*.0011;
+      camera.getWorldDirection(T_DIR);
+      T_R.crossVectors(T_DIR,camera.up).normalize();
+      T_UP.crossVectors(T_R,T_DIR).normalize();
+      T_P1.copy(T_R).multiplyScalar(-dx*k).add(T_UP.multiplyScalar(dy*k));
+      if(cam.follow)cam.panOff.add(T_P1);else cam.ttgt.add(T_P1);
+    }else{
+      cam.tth-=dx*.0052;
+      cam.tph=clamp(cam.tph-dy*.0052,.05,Math.PI-.05);
+    }
+  }else if(ptrs.size===2){
+    const a=[...ptrs.values()],d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+    if(pinchD>0&&d>0)cam.tr=clamp(cam.tr*pinchD/d,minR(),26000);
+    pinchD=d;
+  }
+});
+function castAt(x,y){
+  ndc.set(x/innerWidth*2-1,-(y/innerHeight)*2+1);
+  ray.setFromCamera(ndc,camera);
+  const hits=ray.intersectObjects(hitList,false);
+  for(const h of hits){
+    const b=h.object.userData.b;
+    if(b.kind==='moon'&&!showMoons)continue;
+    return b;
+  }
+  return null;
+}
+stage.addEventListener('pointerup',e=>{
+  if(ptrs.size===1&&moved<6&&dragBtn===0){
+    const b=castAt(e.clientX,e.clientY);
+    if(b)select(b,false);else deselect();
+  }
+  ptrs.delete(e.pointerId);pinchD=0;
+});
+stage.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);pinchD=0});
+stage.addEventListener('wheel',e=>{
+  e.preventDefault();
+  cam.tr=clamp(cam.tr*Math.exp(e.deltaY*.0012),minR(),26000);
+},{passive:false});
+stage.addEventListener('dblclick',e=>{
+  const b=castAt(e.clientX,e.clientY);
+  if(b)select(b,true);else deselect();
+});
+
+/* ---------- papan ketik ---------- */
+addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'){if(e.key==='Escape')e.target.blur();return}
+  const k=e.key.toLowerCase();
+  if(e.key===' '){e.preventDefault();paused=!paused;updPauseIcon()}
+  else if(k==='j')setSpd(spdIdx-1);
+  else if(k==='l')setSpd(spdIdx+1);
+  else if(k==='k')setSpd(SPD_REAL);
+  else if(k==='r')btnNow.click();
+  else if(k==='o')tgOrbits();
+  else if(k==='n')tgLabels();
+  else if(k==='g')tgGrid();
+  else if(k==='a')tgBelt();
+  else if(k==='u')tgMoons();
+  else if(k==='t')btnTour.click();
+  else if(k==='s')btnScale.click();
+  else if(k==='f')btnFull.click();
+  else if(k==='p')btnShot.click();
+  else if(k==='h')btnHelp.click();
+  else if(e.key==='Escape'){
+    if(helpModal.classList.contains('open'))helpModal.classList.remove('open');
+    else if(datePopover.classList.contains('open'))datePopover.classList.remove('open');
+    else if(scalePopover.classList.contains('open')){scalePopover.classList.remove('open');btnScale.classList.remove('on')}
+    else deselect();
+  }
+  else if(e.key>='0'&&e.key<='9'){
+    const order=['Matahari','Merkurius','Venus','Bumi','Mars','Jupiter','Saturnus','Uranus','Neptunus','Pluto'];
+    const b=byName[order[+e.key]];if(b)select(b,false);
+  }
+});
+
+/* ---------- label & retikel ---------- */
+function updLabels(){
+  if(!showLabels)return;
+  const w=innerWidth,h=innerHeight;
+  for(const b of BODIES){
+    const el=b.label;
+    if(b.kind==='moon'){
+      if(!showMoons){el.style.display='none';continue}
+      if(camera.position.distanceTo(b.parentBody.worldPos)>b.parentBody.vis*sizeMul*62){el.style.display='none';continue}
+    }
+    tmpV.copy(b.worldPos).applyMatrix4(VIEW);
+    if(tmpV.z>-.5){el.style.display='none';continue}
+    tmpV.copy(b.worldPos).project(camera);
+    if(tmpV.x<-1.05||tmpV.x>1.05||tmpV.y<-1.05||tmpV.y>1.05){el.style.display='none';continue}
+    if(selBody===b&&cam.r<b.vis*sizeMul*16){el.style.display='none';continue}
+    el.style.display='';
+    el.style.left=((tmpV.x*.5+.5)*w)+'px';
+    el.style.top=((-tmpV.y*.5+.5)*h)+'px';
+  }
+}
+function updReticle(){
+  if(!selBody){reticleEl.classList.remove('on');return}
+  tmpV.copy(selBody.worldPos).applyMatrix4(VIEW);
+  if(tmpV.z>-.1){reticleEl.classList.remove('on');return}
+  const dist=-tmpV.z;
+  tmpV.copy(selBody.worldPos).project(camera);
+  reticleEl.classList.add('on');
+  const rpx=clamp((selBody.vis*sizeMul/dist)/fovTan*(innerHeight/2),12,150);
+  const sz=Math.round(rpx*2.3+14);
+  reticleEl.style.left=((tmpV.x*.5+.5)*innerWidth)+'px';
+  reticleEl.style.top=((-tmpV.y*.5+.5)*innerHeight)+'px';
+  reticleEl.style.width=sz+'px';reticleEl.style.height=sz+'px';
+}
+
+/* ---------- loop utama ---------- */
+let lastT=performance.now();
+function loop(){
+  requestAnimationFrame(loop);
+  const now=performance.now();let dt=(now-lastT)/1000;lastT=now;dt=Math.min(dt,.05);
+  if(!paused){
+    simJD+=SPEEDS[spdIdx].v*dt/86400;
+    if(simJD<JD_MIN){simJD=JD_MIN;edgeStop('Batas bawah simulasi: tahun 1700')}
+    if(simJD>JD_MAX){simJD=JD_MAX;edgeStop('Batas atas simulasi: tahun 2399')}
+  }
+  updateBodies(simJD);
+  updateBelt(belts,simJD);updateBelt(kuiper,simJD);
+  if(tourOn){tourT+=dt;if(tourT>9)tourStep()}
+  const k1=1-Math.exp(-dt*6),k2=1-Math.exp(-dt*9),k3=1-Math.exp(-dt*5);
+  cam.th+=(cam.tth-cam.th)*k1;cam.ph+=(cam.tph-cam.ph)*k1;cam.r+=(cam.tr-cam.r)*k3;
+  if(cam.follow)cam.ttgt.copy(cam.follow.worldPos).add(cam.panOff);
+  cam.tgt.lerp(cam.ttgt,k2);
+  const sp=Math.sin(cam.ph);
+  camera.position.set(cam.tgt.x+cam.r*sp*Math.cos(cam.th),cam.tgt.y+cam.r*Math.cos(cam.ph),cam.tgt.z+cam.r*sp*Math.sin(cam.th));
+  camera.lookAt(cam.tgt);
+  camera.updateMatrixWorld();
+  VIEW.copy(camera.matrixWorld).invert();
+  const pul=1+Math.sin(now*.0016)*.02;
+  if(sunCore.userData.s)sunCore.scale.set(sunCore.userData.s*pul,sunCore.userData.s*pul,1);
+  updChrono();updLabels();updReticle();updLive();
+  renderer.render(scene,camera);
+}
+
+/* ---------- inisialisasi ---------- */
+function nextFrame(){return new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))}
+function hideSplash(){splash.classList.add('gone');clearTimeout(splashTimer)}
+async function init(){
+  if(window.__NOTHREE){
+    const ng=$('nogl');ng.style.display='flex';
+    ng.firstElementChild.innerHTML='Gagal memuat pustaka 3D (Three.js).<br>Periksa koneksi internet, lalu muat ulang halaman.';
+    loadingEl.classList.add('gone');return;
+  }
+  try{renderer=new THREE.WebGLRenderer({antialias:true})}
+  catch(err){$('nogl').style.display='flex';loadingEl.classList.add('gone');return}
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  renderer.setSize(innerWidth,innerHeight);
+  stage.appendChild(renderer.domElement);
+  MAXANI=renderer.capabilities.getMaxAnisotropy();
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(52,innerWidth/innerHeight,.1,60000);
+  fovTan=Math.tan(camera.fov*D2R/2);
+  const steps=[
+    ['Menyusun medan bintang',buildStars],
+    ['Menyalakan Matahari',buildSun]];
+  for(const c of CFG)if(c.kind==='planet'||c.kind==='dwarf')steps.push(['Membentuk '+c.id,()=>buildPlanet(c)]);
+  steps.push(['Mengorbitkan satelit',()=>MOONS.forEach(buildMoon)]);
+  steps.push(['Menebar sabuk asteroid & Kuiper',()=>{
+    belts=makeBelt(3000,2.1,3.3,.05,0xb9a890,1.7,.6,5);
+    kuiper=makeBelt(2200,38,48,1.5,0x7e93b8,1.8,.42,9);
+  }]);
+  steps.push(['Melepas Komet Halley',buildComet]);
+  steps.push(['Menggambar grid & katalog',()=>{buildGrid();buildSidebar()}]);
+  for(let i=0;i<steps.length;i++){
+    loadingText.textContent=steps[i][0].toUpperCase();
+    loadingBarI.style.width=Math.round(i/steps.length*100)+'%';
+    await nextFrame();
+    steps[i][1]();
+  }
+  loadingBarI.style.width='100%';
+  for(const b of BODIES)if(b.orbit)rebuildOrbit(b,simJD);
+  updateBodies(simJD);applyVis();applyScale();
+  sunCore.userData.s=sunCore.scale.x;
+  dateInput.min='1700-01-01T00:00';dateInput.max='2399-12-31T23:59';
+  if(innerWidth<=700)sidebar.classList.add('hidden');
+  refreshSbToggle();
+  updPauseIcon();
+  await nextFrame();
+  loadingEl.classList.add('gone');
+  splashTimer=setTimeout(hideSplash,3200);
+  addEventListener('pointerdown',hideSplash,{once:true});
+  addEventListener('keydown',hideSplash,{once:true});
+  lastT=performance.now();
+  loop();
+}
+addEventListener('resize',()=>{
+  if(!renderer)return;
+  renderer.setSize(innerWidth,innerHeight);
+  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  fovTan=Math.tan(camera.fov*D2R/2);
+});
+init();
+</script>
+</body>
+</html>
