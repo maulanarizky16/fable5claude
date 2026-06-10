@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>HUMANOID-50 · 3D Concept Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0e1116; --panel:rgba(17,21,28,.80); --line:#232b36; --line2:#2a3340;
+  --txt:#cfd6df; --dim:#7c8794; --faint:#5a6573; --safety:#ff6a2b; --safety2:#ff8a52;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --disp:'Chakra Petch','Segoe UI',system-ui,sans-serif;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden}
+body{
+  background:radial-gradient(1200px 820px at 50% 28%, #1b2330 0%, #11151c 52%, #0a0d12 100%);
+  color:var(--txt); font-family:var(--disp); font-weight:300;
+}
+canvas#c{position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; cursor:grab}
+canvas#c:active{cursor:grabbing}
+
+/* ---------- nameplate ---------- */
+.nameplate{position:fixed; top:16px; left:18px; z-index:5; pointer-events:none; user-select:none}
+.nameplate h1{
+  margin:0; font:600 21px/1 var(--disp); letter-spacing:.16em; color:#e8ecf1;
+}
+.nameplate h1 b{color:var(--safety); font-weight:600}
+.nameplate .sub{
+  margin-top:5px; font:400 9.5px var(--mono); letter-spacing:.24em; color:var(--dim); text-transform:uppercase;
+}
+.chips{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; max-width:46vw}
+.chips span{
+  font:400 9.5px var(--mono); letter-spacing:.08em; color:#aeb7c2;
+  border:1px solid var(--line2); background:rgba(17,21,28,.66); padding:3px 8px; border-radius:3px;
+}
+
+/* ---------- panel ---------- */
+#panelBtn{
+  position:fixed; top:16px; right:14px; z-index:8; width:40px; height:40px; display:none;
+  background:var(--panel); border:1px solid var(--line); border-radius:8px; color:var(--txt);
+  font:600 15px var(--disp); cursor:pointer; backdrop-filter:blur(12px);
+}
+.panel{
+  position:fixed; top:14px; right:14px; bottom:88px; width:272px; z-index:6;
+  background:var(--panel); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--line); border-radius:10px; overflow-y:auto; overscroll-behavior:contain;
+  padding:6px 0 12px; scrollbar-width:thin; scrollbar-color:#39424e transparent;
+}
+.panel::-webkit-scrollbar{width:5px}
+.panel::-webkit-scrollbar-thumb{background:#39424e; border-radius:3px}
+.sec{padding:12px 14px 4px}
+.sec h2{
+  margin:0 0 9px; font:400 9.5px var(--mono); letter-spacing:.22em; color:var(--dim); text-transform:uppercase;
+  border-left:2px solid var(--safety); padding-left:8px;
+}
+.tgl{display:flex; align-items:center; gap:9px; padding:4px 2px; font:300 12.5px var(--disp); cursor:pointer; color:var(--txt)}
+.tgl input{accent-color:var(--safety); width:14px; height:14px; cursor:pointer}
+.btnrow{display:flex; gap:6px; flex-wrap:wrap}
+.btn{
+  font:400 10px var(--mono); letter-spacing:.06em; color:var(--txt); cursor:pointer;
+  background:#1b212b; border:1px solid var(--line2); border-radius:5px; padding:6px 10px;
+}
+.btn:hover{border-color:#3b4654; color:#fff}
+details.jg{border-top:1px solid var(--line); padding:0 14px}
+details.jg summary{
+  list-style:none; cursor:pointer; padding:10px 0; font:400 10px var(--mono);
+  letter-spacing:.14em; color:#9aa5b1; text-transform:uppercase; display:flex; justify-content:space-between;
+}
+details.jg summary::after{content:'+'; color:var(--faint)}
+details.jg[open] summary::after{content:'–'}
+.jrow{display:grid; grid-template-columns:64px 1fr 38px; align-items:center; gap:8px; padding:3px 0 7px}
+.jrow label{font:400 9px var(--mono); color:var(--dim); letter-spacing:.04em}
+.jrow output{font:400 9.5px var(--mono); color:#c8d0da; text-align:right}
+input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:18px; background:transparent; cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:3px; background:#2a3340; border-radius:2px}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:11px; height:11px; border-radius:3px; background:var(--safety);
+  margin-top:-4px; border:none;
+}
+input[type=range]::-moz-range-track{height:3px; background:#2a3340; border-radius:2px}
+input[type=range]::-moz-range-thumb{width:11px; height:11px; border-radius:3px; background:var(--safety); border:none}
+.sliders.dimmed{opacity:.55}
+.spec{font:400 10px var(--mono); line-height:1.5; color:#aab4bf; padding:2px 0 6px}
+.spec b{color:#e2e7ec; font-weight:600}
+.spec .r{display:grid; grid-template-columns:62px 1fr; gap:8px; padding:3px 0; border-bottom:1px dashed #1f2630}
+.spec .r:last-child{border-bottom:none}
+.note{font:400 9px var(--mono); color:var(--faint); padding-top:8px; letter-spacing:.03em}
+
+/* ---------- mode bar ---------- */
+.modes{
+  position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:7;
+  display:flex; gap:6px; padding:5px; background:var(--panel); backdrop-filter:blur(12px);
+  border:1px solid var(--line); border-radius:9px;
+}
+.modes button{
+  font:500 10px var(--mono); letter-spacing:.12em; text-transform:uppercase; cursor:pointer;
+  color:#9aa5b1; background:transparent; border:1px solid transparent; border-radius:6px; padding:8px 13px;
+  transition:background .15s,color .15s;
+}
+.modes button:hover{color:#fff}
+.modes button.on{background:var(--safety); color:#13100c; font-weight:600}
+
+/* ---------- callout labels ---------- */
+#labels{position:fixed; inset:0; z-index:4; pointer-events:none; overflow:hidden}
+.lbl{position:absolute; left:0; top:0; display:flex; align-items:center; will-change:transform; white-space:nowrap}
+.lbl .dot{width:7px; height:7px; border:1.5px solid var(--safety); border-radius:50%; background:rgba(14,17,22,.5)}
+.lbl .ln{width:14px; height:1px; background:#5a6b7d}
+.lbl .tx{
+  font:400 9.5px var(--mono); letter-spacing:.05em; color:#d6dde6;
+  background:rgba(14,17,22,.74); border:1px solid var(--line2); border-left:2px solid var(--safety);
+  padding:2px 7px; border-radius:0 3px 3px 0;
+}
+.lbl.dimlbl .dot,.lbl.dimlbl .ln{display:none}
+.lbl.dimlbl .tx{border-left-color:#5a6b7d; color:#9fb0c2}
+
+.hint{
+  position:fixed; left:18px; bottom:18px; z-index:5; font:400 9.5px var(--mono);
+  letter-spacing:.06em; color:var(--faint); user-select:none; pointer-events:none;
+}
+
+@media (max-width:900px){
+  .panel{transform:translateX(112%); transition:transform .25s ease; width:min(78vw,300px); bottom:92px}
+  .panel.open{transform:translateX(0)}
+  #panelBtn{display:block}
+  .nameplate h1{font-size:17px}
+  .chips{max-width:62vw}
+  .hint{display:none}
+  .modes{max-width:94vw; overflow-x:auto}
+}
+@media (prefers-reduced-motion: reduce){
+  .panel,.modes button{transition:none}
+}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--safety); outline-offset:2px}
+</style>
+</head>
+<body>
+
+<div class="nameplate">
+  <h1>HUMANOID&#8209;<b>50</b></h1>
+  <div class="sub">Desktop Research Platform · 3D Concept Viewer</div>
+  <div class="chips">
+    <span>50 CM</span><span>20 DOF</span><span>&le; 2,5 KG</span><span>STS3215 &times;20</span>
+  </div>
+</div>
+
+<canvas id="c"></canvas>
+<div id="labels"></div>
+
+<button id="panelBtn" aria-label="Buka panel">&#9776;</button>
+
+<aside class="panel" id="panel">
+  <div class="sec">
+    <h2>Tampilan</h2>
+    <label class="tgl"><input type="checkbox" id="tgXray"> X-Ray (lihat internal torso)</label>
+    <label class="tgl"><input type="checkbox" id="tgLbl"> Label komponen</label>
+    <label class="tgl"><input type="checkbox" id="tgDim"> Garis dimensi</label>
+    <label class="tgl"><input type="checkbox" id="tgGrid" checked> Grid lantai</label>
+    <label class="tgl"><input type="checkbox" id="tgRot" checked> Auto-rotate kamera</label>
+    <div class="btnrow" style="margin-top:7px">
+      <button class="btn" id="btnCam">Reset kamera</button>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>Preset Pose</h2>
+    <div class="btnrow">
+      <button class="btn" data-preset="stand">Berdiri</button>
+      <button class="btn" data-preset="ready">Siaga</button>
+      <button class="btn" data-preset="tpose">T-Pose</button>
+    </div>
+  </div>
+
+  <div class="sec" style="padding-bottom:8px">
+    <h2>Joint Control — 20 DOF</h2>
+  </div>
+  <div id="jointGroups" class="sliders"></div>
+
+  <details class="jg">
+    <summary>Spesifikasi</summary>
+    <div class="spec">
+      <div class="r"><b>Fisik</b><span>tinggi 50 cm · massa target &le; 2,5 kg</span></div>
+      <div class="r"><b>DOF</b><span>kaki 2&times;6 · lengan 2&times;3 · kepala 2</span></div>
+      <div class="r"><b>Aktuator</b><span>20&times; Feetech STS3215, bus TTL 1 Mbps daisy-chain</span></div>
+      <div class="r"><b>Compute</b><span>Pi 5 8GB &harr; ESP32-S3 (USB-CDC), loop low-level 100&ndash;150 Hz</span></div>
+      <div class="r"><b>Sensing</b><span>IMU ICM-42688-P · FSR 4&times;/telapak · Pi Cam 3 Wide · INA226</span></div>
+      <div class="r"><b>Power</b><span>Li-ion 2S 5000 mAh · buck 5 V / 5 A</span></div>
+      <div class="r"><b>Estimasi</b><span>&plusmn; Rp 9&ndash;10 jt</span></div>
+      <div class="note">Proporsi mengikuti spek desain — model konsep dari primitive, bukan CAD final.</div>
+    </div>
+  </details>
+</aside>
+
+<nav class="modes" id="modes">
+  <button data-mode="idle">Idle</button>
+  <button data-mode="walk" class="on">Jalan</button>
+  <button data-mode="squat">Jongkok</button>
+  <button data-mode="wave">Lambai</button>
+  <button data-mode="manual">Manual</button>
+</nav>
+
+<div class="hint">drag &middot; orbit&ensp;/&ensp;scroll &middot; zoom&ensp;/&ensp;klik 2&times; &middot; reset</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+var TAU = Math.PI*2, RAD = Math.PI/180;
+var RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= renderer / scene ================= */
+var canvas = document.getElementById('c');
+var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera(35, 1, 0.1, 600);
+
+var TARGET = new THREE.Vector3(0, 24.5, 0);
+var orb = {th:0.62, ph:1.22, r:96, thT:0.62, phT:1.22, rT:96};
+var ORB0 = {th:0.62, ph:1.22, r:96};
+
+/* lights */
+scene.add(new THREE.HemisphereLight(0xbfd0e4, 0x33291f, 0.55));
+var key = new THREE.DirectionalLight(0xffffff, 0.95);
+key.position.set(34, 58, 30);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.left = -55; key.shadow.camera.right = 55;
+key.shadow.camera.top = 70;  key.shadow.camera.bottom = -25;
+key.shadow.camera.far = 200;
+key.shadow.bias = -0.0004;
+scene.add(key);
+var rim = new THREE.DirectionalLight(0x6fa0ff, 0.32);
+rim.position.set(-42, 32, -46); scene.add(rim);
+var fill = new THREE.DirectionalLight(0xffd9b8, 0.18);
+fill.position.set(-25, 16, 38); scene.add(fill);
+
+/* ground */
+var ground = new THREE.Mesh(new THREE.PlaneGeometry(500,500), new THREE.ShadowMaterial({opacity:0.32}));
+ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
+var grid = new THREE.GridHelper(150, 30, 0x33404f, 0x1c242e);
+grid.position.y = 0.02; grid.material.transparent = true; grid.material.opacity = 0.45;
+scene.add(grid);
+
+/* ================= materials ================= */
+function STD(c, r, m){ return new THREE.MeshStandardMaterial({color:c, roughness:r, metalness:m||0.05}); }
+var matBone   = STD(0xd9dde3, 0.62);
+var matShell  = new THREE.MeshStandardMaterial({color:0xe2e6ec, roughness:0.5, metalness:0.04, transparent:true, opacity:1});
+var matOrange = STD(0xff6a2b, 0.55);
+var matServo  = STD(0x1d2126, 0.45, 0.25);
+var matBrass  = STD(0xc9974c, 0.35, 0.7);
+var matDark   = STD(0x2c3138, 0.6);
+var matFace   = STD(0x12161c, 0.4, 0.1);
+var matPCB    = STD(0x1f8a4c, 0.5);
+var matNavy   = STD(0x1d3f66, 0.5);
+var matRed    = STD(0xc23b3b, 0.5);
+var matCell   = STD(0x2e8f8a, 0.45);
+var matSilver = STD(0xb8bec6, 0.3, 0.6);
+var matCopper = STD(0xb06c3a, 0.4, 0.55);
+var matGlow   = new THREE.MeshBasicMaterial({color:0xff6a2b});
+var matLens   = new THREE.MeshStandardMaterial({color:0x0d1b2c, roughness:0.15, metalness:0.2, emissive:0x1d4f8f, emissiveIntensity:0.9});
+
+/* ================= build helpers ================= */
+var root = new THREE.Group(); scene.add(root);
+
+function P(geo, mat, x, y, z, parent){
+  var m = new THREE.Mesh(geo, mat);
+  m.position.set(x, y, z);
+  m.castShadow = true; m.receiveShadow = true;
+  (parent || root).add(m);
+  return m;
+}
+function B(w,h,d, mat, x,y,z, parent){ return P(new THREE.BoxGeometry(w,h,d), mat, x,y,z, parent); }
+function C(r,h, mat, x,y,z, parent, axis){
+  var m = P(new THREE.CylinderGeometry(r,r,h,24), mat, x,y,z, parent);
+  if(axis === 'x') m.rotation.z = Math.PI/2;
+  if(axis === 'z') m.rotation.x = Math.PI/2;
+  return m;
+}
+function G(x,y,z, parent){
+  var g = new THREE.Group(); g.position.set(x,y,z);
+  (parent || root).add(g);
+  return g;
+}
+/* servo STS3215-ish: charcoal body + brass horn on rotation axis */
+function servoBlock(parent, x, y, z, axis){
+  var g = G(x,y,z, parent);
+  B(2.5, 4.2, 3.1, matServo, 0, 0, 0, g);
+  B(2.7, 0.7, 3.3, matDark, 0, -1.6, 0, g);
+  if(axis === 'x'){ C(1.05, 0.5, matBrass, 1.5, 1.05, 0, g, 'x'); C(1.05, 0.5, matDark, -1.5, 1.05, 0, g, 'x'); }
+  else if(axis === 'z'){ C(1.05, 0.5, matBrass, 0, 1.05, 1.8, g, 'z'); }
+  else { C(1.05, 0.5, matBrass, 0, 2.35, 0, g); }
+  return g;
+}
+
+/* ================= joint registry ================= */
+var joints = {};
+function J(name, group, axis, sign){ joints[name] = {g:group, ax:axis, sg:sign}; }
+function setJ(name, deg){ var j = joints[name]; j.g.rotation[j.ax] = (deg||0) * RAD * j.sg; }
+
+/* ================= PELVIS + TORSO ================= */
+B(9.4, 2.8, 5.8, matBone,   0, 24.9, 0);
+B(9.8, 0.8, 6.2, matOrange, 0, 23.55, 0);
+
+var tor = G(0, 0, 0);
+var shell = B(13.4, 14.4, 8, matShell, 0, 34.6, 0, tor);
+for(var vi=0; vi<3; vi++) B(7, 0.34, 0.14, matFace, 0, 30.9 + vi*1.15, 4.06, tor);
+var chestLED = B(0.6, 0.6, 0.18, matGlow, -4.5, 39.9, 4.06, tor);
+B(2.3, 3.4, 5.4, matOrange,  8.0, 39.5, 0, tor);
+B(2.3, 3.4, 5.4, matOrange, -8.0, 39.5, 0, tor);
+
+/* internals */
+var internals = G(0, 0, 0, tor);
+var pi5 = B(8.5, 1.5, 5.6, matPCB, 0, 37.2, 0.5, internals);
+B(2.0, 1.0, 0.9, matSilver, -2.3, 38.35, 2.9, internals);
+B(2.0, 1.0, 0.9, matSilver,  0.2, 38.35, 2.9, internals);
+B(5.4, 0.7, 0.6, matDark,    0,  38.2, -1.9, internals);
+var esp = B(2.6, 0.7, 5.0, matNavy, -2.7, 34.2, 1.0, internals);
+B(1.5, 0.5, 1.7, matSilver, -2.7, 34.8, 0.2, internals);
+var imu = B(1.5, 0.5, 1.5, matRed, 2.7, 34.2, 0.6, internals);
+var buck = B(2.2, 1.0, 1.6, matDark, 2.7, 31.4, 2.2, internals);
+C(0.55, 0.7, matCopper, 2.2, 31.5, 1.6, internals);
+var batt = G(0, 0, 0, internals);
+var battCell = null;
+var bx = [-1.05, 1.05], bz = [-1.7, 0.5];
+for(var i=0;i<2;i++) for(var k=0;k<2;k++){
+  var cell = C(0.9, 6.4, matCell, bx[i], 30.6, bz[k], batt);
+  if(!battCell) battCell = cell;
+  C(0.92, 0.5, matSilver, bx[i], 33.9, bz[k], batt);
+}
+
+/* ================= HEAD ================= */
+B(2.7, 1.7, 2.7, matServo, 0, 41.3, 0, tor);
+var neckYawG = G(0, 42.15, 0, tor);
+C(1.15, 1.6, matDark, 0, 0.35, 0, neckYawG);
+var headPitchG = G(0, 1.45, 0, neckYawG);
+B(6.3, 5.3, 5.7, matBone, 0, 2.7, 0, headPitchG);
+B(5.1, 3.3, 0.4, matFace, 0, 2.6, 2.95, headPitchG);
+C(0.85, 0.6, matDark, 0, 3.1, 3.05, headPitchG, 'z');
+var lens = C(0.55, 0.18, matLens, 0, 3.1, 3.42, headPitchG, 'z');
+C(0.5, 0.35, matOrange,  3.3, 2.7, 0, headPitchG, 'x');
+C(0.5, 0.35, matOrange, -3.3, 2.7, 0, headPitchG, 'x');
+C(0.13, 2.2, matDark, 2.3, 6.1, -1.5, headPitchG);
+C(0.22, 0.45, matOrange, 2.3, 7.35, -1.5, headPitchG);
+J('neckYaw', neckYawG, 'y', 1);
+J('headPitch', headPitchG, 'x', -1);
+
+/* ================= ARMS ================= */
+var rKneeServo, lFSR;
+function buildArm(side){
+  var m = (side === 'l') ? 1 : -1;
+  var spG = G(m*8.6, 39.5, 0, tor);          /* shoulder pitch (X) */
+  var srG = G(0, 0, 0, spG);                  /* shoulder roll (Z) */
+  servoBlock(srG, 0, -1.4, 0, 'z');
+  B(0.45, 7.2, 2.6, matOrange,  1.45, -4.0, 0, srG);
+  B(0.45, 7.2, 2.6, matOrange, -1.45, -4.0, 0, srG);
+  B(2.4, 0.7, 2.3, matBone, 0, -5.6, 0, srG);
+  servoBlock(srG, 0, -7.6, 0, 'x');
+  var elG = G(0, -7.6, 0, srG);               /* elbow (X) */
+  B(2.4, 6.2, 2.5, matBone, 0, -3.6, 0.1, elG);
+  B(2.2, 2.6, 1.2, matOrange, 0, -7.3, 0.35, elG);
+  J(side+'ShoulderPitch', spG, 'x', -1);
+  J(side+'ShoulderRoll',  srG, 'z', m);
+  J(side+'Elbow',         elG, 'x', -1);
+}
+buildArm('l'); buildArm('r');
+
+/* ================= LEGS ================= */
+function buildLeg(side){
+  var m = (side === 'l') ? 1 : -1;
+  B(2.5, 1.9, 2.5, matServo, m*4, 24.35, 0);          /* hip yaw servo (in pelvis) */
+  var yawG  = G(m*4, 23, 0);                           /* hip yaw  (Y) */
+  var rollG = G(0, 0, 0, yawG);                        /* hip roll (Z) */
+  var hpG   = G(0, 0, 0, rollG);                       /* hip pitch(X) */
+  servoBlock(rollG, 0, 0, 0, 'x');
+  /* thigh */
+  B(0.45, 9.6, 3.0, matOrange,  1.55, -5.2, 0, hpG);
+  B(0.45, 9.6, 3.0, matOrange, -1.55, -5.2, 0, hpG);
+  B(2.6, 6.6, 0.5, matBone, 0, -5.3, 1.6, hpG);
+  var ks = servoBlock(hpG, 0, -10, 0, 'x');            /* knee servo */
+  if(side === 'r') rKneeServo = ks;
+  var kneeG = G(0, -10, 0, hpG);                       /* knee (X) */
+  B(0.45, 9.4, 2.8, matOrange,  1.55, -5.15, 0, kneeG);
+  B(0.45, 9.4, 2.8, matOrange, -1.55, -5.15, 0, kneeG);
+  B(2.5, 6.2, 0.5, matBone, 0, -5.3, 1.5, kneeG);
+  servoBlock(kneeG, 0, -10, 0, 'x');                   /* ankle servo */
+  var apG = G(0, -10, 0, kneeG);                       /* ankle pitch (X) */
+  var arG = G(0, 0, 0, apG);                           /* ankle roll  (Z) */
+  /* foot */
+  B(5.0, 1.1, 8.8, matOrange, 0, -2.25, 1.1, arG);
+  B(3.6, 0.9, 4.4, matBone, 0, -1.6, 0.7, arG);
+  var fx = [1.85, -1.85], fz = [-2.5, 4.5];
+  for(var i=0;i<2;i++) for(var k=0;k<2;k++){
+    var f = C(0.34, 0.2, matGlow, fx[i], -2.86, fz[k], arG);
+    if(side === 'l' && i === 0 && k === 1) lFSR = f;
+  }
+  J(side+'HipYaw',     yawG,  'y', m);
+  J(side+'HipRoll',    rollG, 'z', m);
+  J(side+'HipPitch',   hpG,   'x', -1);
+  J(side+'Knee',       kneeG, 'x', 1);
+  J(side+'AnklePitch', apG,   'x', -1);
+  J(side+'AnkleRoll',  arG,   'z', m);
+}
+buildLeg('l'); buildLeg('r');
+
+/* ================= dimension line ================= */
+var dimGroup = new THREE.Group();
+(function(){
+  var pts = [
+    new THREE.Vector3(13,0,0),   new THREE.Vector3(13,50,0),
+    new THREE.Vector3(11.8,0,0), new THREE.Vector3(14.2,0,0),
+    new THREE.Vector3(11.8,50,0),new THREE.Vector3(14.2,50,0)
+  ];
+  var g = new THREE.BufferGeometry().setFromPoints(pts);
+  dimGroup.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({color:0x55657a})));
+})();
+dimGroup.visible = false; scene.add(dimGroup);
+
+/* ================= pose system ================= */
+var JOINT_KEYS = ['neckYaw','headPitch',
+  'lShoulderPitch','lShoulderRoll','lElbow','rShoulderPitch','rShoulderRoll','rElbow',
+  'lHipYaw','lHipRoll','lHipPitch','lKnee','lAnklePitch','lAnkleRoll',
+  'rHipYaw','rHipRoll','rHipPitch','rKnee','rAnklePitch','rAnkleRoll'];
+
+function zeroPose(){
+  var p = {swayX:0};
+  for(var i=0;i<JOINT_KEYS.length;i++) p[JOINT_KEYS[i]] = 0;
+  return p;
+}
+function legExt(hip, knee){
+  return 10*Math.cos((hip||0)*RAD) + 10*Math.cos(((knee||0)-(hip||0))*RAD);
+}
+function applyPose(p){
+  for(var i=0;i<JOINT_KEYS.length;i++) setJ(JOINT_KEYS[i], p[JOINT_KEYS[i]]||0);
+  var ext = Math.max(legExt(p.lHipPitch, p.lKnee), legExt(p.rHipPitch, p.rKnee));
+  var drop = Math.min(14, Math.max(0, 20 - ext));
+  root.position.y = -drop;
+  root.position.x = p.swayX || 0;
+}
+var livePose = zeroPose();
+var manualPose = zeroPose();
+
+/* ================= animations ================= */
+function animIdle(t, p){
+  p.neckYaw = 15*Math.sin(t*0.42) + 7*Math.sin(t*0.19);
+  p.headPitch = 3.2*Math.sin(t*0.31) + 1.2;
+  p.lShoulderPitch = 2.4*Math.sin(t*0.7);
+  p.rShoulderPitch = 2.4*Math.sin(t*0.7 + Math.PI);
+  p.lShoulderRoll = p.rShoulderRoll = 4.5;
+  p.lElbow = p.rElbow = 9 + 2*Math.sin(t*0.55);
+  p.lHipPitch = p.rHipPitch = 4;
+  p.lKnee = p.rKnee = 8;
+  p.lAnklePitch = p.rAnklePitch = 4;
+  p.swayX = 0.28*Math.sin(t*0.5);
+}
+function animWalk(t, p){
+  var f = t*0.85;
+  var sides = ['l','r'];
+  for(var i=0;i<2;i++){
+    var s = sides[i], ph = f + (i===0 ? 0 : 0.5);
+    var sp = Math.sin(TAU*ph);
+    var lift = Math.pow(Math.max(0, sp), 1.1);
+    var hip = 10 + 19*sp;
+    var knee = 18 + 44*lift;
+    p[s+'HipPitch'] = hip;
+    p[s+'Knee'] = knee;
+    p[s+'AnklePitch'] = knee - hip - 13*lift;
+    p[s+'HipRoll'] = (i===0?1:-1) * 3.0*Math.sin(TAU*f);
+    p[s+'ShoulderPitch'] = -15*sp;
+    p[s+'Elbow'] = Math.max(0, 16 - 9*sp);
+    p[s+'ShoulderRoll'] = 5;
+  }
+  p.headPitch = 2 + 1.4*Math.sin(TAU*2*f);
+  p.neckYaw = 2.5*Math.sin(TAU*f*0.5);
+  p.swayX = -1.1*Math.sin(TAU*f + 0.5);
+}
+function animSquat(t, p){
+  var a = 17.5*(1 - Math.cos(t*1.35));
+  p.lHipPitch = p.rHipPitch = a;
+  p.lKnee = p.rKnee = 2*a;
+  p.lAnklePitch = p.rAnklePitch = a;
+  p.lShoulderPitch = p.rShoulderPitch = 0.85*a;
+  p.lElbow = p.rElbow = 0.4*a;
+  p.headPitch = 0.12*a;
+  p.lShoulderRoll = p.rShoulderRoll = 5;
+}
+function animWave(t, p){
+  p.rShoulderRoll = 78 + 5*Math.sin(t*1.3);
+  p.rShoulderPitch = 12;
+  p.rElbow = 52 + 26*Math.sin(t*5.2);
+  p.lShoulderRoll = 5; p.lShoulderPitch = 3; p.lElbow = 12;
+  p.neckYaw = -11; p.headPitch = 4;
+  p.lHipPitch = p.rHipPitch = 6;
+  p.lKnee = p.rKnee = 12;
+  p.lAnklePitch = p.rAnklePitch = 6;
+  p.swayX = 0.3*Math.sin(t*1.3);
+}
+var anims = {idle:animIdle, walk:animWalk, squat:animSquat, wave:animWave};
+
+/* ================= joint sliders UI ================= */
+var GROUPS = [
+  {t:'Kepala — 2 DOF', open:false, items:[
+    ['neckYaw','NECK YAW',-60,60], ['headPitch','HEAD PITCH',-25,25]]},
+  {t:'Lengan Kiri — 3 DOF', items:[
+    ['lShoulderPitch','SHO PITCH',-60,130], ['lShoulderRoll','SHO ROLL',-10,150], ['lElbow','ELBOW',0,125]]},
+  {t:'Lengan Kanan — 3 DOF', items:[
+    ['rShoulderPitch','SHO PITCH',-60,130], ['rShoulderRoll','SHO ROLL',-10,150], ['rElbow','ELBOW',0,125]]},
+  {t:'Kaki Kiri — 6 DOF', items:[
+    ['lHipYaw','HIP YAW',-45,45], ['lHipRoll','HIP ROLL',-25,40], ['lHipPitch','HIP PITCH',-45,95],
+    ['lKnee','KNEE',0,130], ['lAnklePitch','ANK PITCH',-45,45], ['lAnkleRoll','ANK ROLL',-25,25]]},
+  {t:'Kaki Kanan — 6 DOF', items:[
+    ['rHipYaw','HIP YAW',-45,45], ['rHipRoll','HIP ROLL',-25,40], ['rHipPitch','HIP PITCH',-45,95],
+    ['rKnee','KNEE',0,130], ['rAnklePitch','ANK PITCH',-45,45], ['rAnkleRoll','ANK ROLL',-25,25]]}
+];
+var jointWrap = document.getElementById('jointGroups');
+var sliderEls = {};
+GROUPS.forEach(function(grp){
+  var det = document.createElement('details');
+  det.className = 'jg';
+  var sum = document.createElement('summary');
+  sum.textContent = grp.t;
+  det.appendChild(sum);
+  grp.items.forEach(function(it){
+    var row = document.createElement('div'); row.className = 'jrow';
+    var lab = document.createElement('label'); lab.textContent = it[1];
+    var inp = document.createElement('input');
+    inp.type = 'range'; inp.min = it[2]; inp.max = it[3]; inp.step = 1; inp.value = 0;
+    inp.dataset.joint = it[0];
+    var out = document.createElement('output'); out.textContent = '0\u00B0';
+    inp.addEventListener('input', function(){
+      var val = +inp.value;
+      if(mode !== 'manual') enterManual(true);
+      manualPose[it[0]] = val;
+      inp.value = val;
+      out.textContent = val + '\u00B0';
+    });
+    row.appendChild(lab); row.appendChild(inp); row.appendChild(out);
+    det.appendChild(row);
+    sliderEls[it[0]] = {inp:inp, out:out};
+  });
+  jointWrap.appendChild(det);
+});
+jointWrap.addEventListener('pointerdown', function(){
+  if(mode !== 'manual') enterManual(true);
+}, true);
+
+function syncSliders(){
+  for(var k in sliderEls){
+    var v = Math.round(manualPose[k]||0);
+    sliderEls[k].inp.value = v;
+    sliderEls[k].out.textContent = v + '\u00B0';
+  }
+}
+
+/* ================= modes ================= */
+var mode = RM ? 'manual' : 'walk';
+var modeBtns = document.querySelectorAll('#modes button');
+function setMode(m){
+  mode = m;
+  modeBtns.forEach(function(b){ b.classList.toggle('on', b.dataset.mode === m); });
+  jointWrap.classList.toggle('dimmed', m !== 'manual');
+}
+modeBtns.forEach(function(b){
+  b.addEventListener('click', function(){
+    if(b.dataset.mode === 'manual') enterManual(true);
+    else setMode(b.dataset.mode);
+  });
+});
+function enterManual(snapshot){
+  if(snapshot !== false){
+    manualPose = {}; 
+    for(var k in livePose) manualPose[k] = livePose[k];
+    syncSliders();
+  }
+  setMode('manual');
+}
+
+/* presets */
+var PRESETS = {
+  stand: zeroPose(),
+  tpose: (function(){ var p = zeroPose(); p.lShoulderRoll = p.rShoulderRoll = 88; return p; })(),
+  ready: (function(){ var p = zeroPose();
+    p.lHipPitch = p.rHipPitch = 14; p.lKnee = p.rKnee = 28; p.lAnklePitch = p.rAnklePitch = 14;
+    p.lShoulderPitch = p.rShoulderPitch = 10; p.lShoulderRoll = p.rShoulderRoll = 8;
+    p.lElbow = p.rElbow = 22; p.headPitch = 3; return p; })()
+};
+document.querySelectorAll('[data-preset]').forEach(function(b){
+  b.addEventListener('click', function(){
+    var src = PRESETS[b.dataset.preset];
+    manualPose = {};
+    for(var k in src) manualPose[k] = src[k];
+    syncSliders();
+    setMode('manual');
+  });
+});
+
+/* ================= callout labels ================= */
+var labelLayer = document.getElementById('labels');
+var labelDefs = [
+  {t:'Pi Camera 3 Wide', o:lens, xr:false},
+  {t:'STS3215 \u00B7 bus ID 14', o:rKneeServo, xr:false},
+  {t:'FSR \u00D74 / telapak', o:lFSR, xr:false},
+  {t:'Raspberry Pi 5 \u00B7 8GB', o:pi5, xr:true},
+  {t:'ESP32-S3 \u00B7 bus master', o:esp, xr:true},
+  {t:'IMU ICM-42688-P', o:imu, xr:true},
+  {t:'Li-ion 2S 5000 mAh', o:battCell, xr:true},
+  {t:'Buck 5V/5A', o:buck, xr:true},
+  {t:'\u2248 50 cm', fixed:new THREE.Vector3(13.6, 26, 0), dim:true}
+];
+labelDefs.forEach(function(d){
+  var el = document.createElement('div');
+  el.className = 'lbl' + (d.dim ? ' dimlbl' : '');
+  el.innerHTML = '<span class="dot"></span><span class="ln"></span><span class="tx">' + d.t + '</span>';
+  el.style.display = 'none';
+  labelLayer.appendChild(el);
+  d.el = el;
+});
+var V = new THREE.Vector3();
+function updateLabels(){
+  var showLbl = tgLbl.checked, xray = tgXray.checked, showDim = tgDim.checked;
+  var W = window.innerWidth, H = window.innerHeight;
+  labelDefs.forEach(function(d){
+    var on = d.dim ? showDim : (showLbl && (!d.xr || xray));
+    if(!on){ d.el.style.display = 'none'; return; }
+    if(d.fixed) V.copy(d.fixed); else d.o.getWorldPosition(V);
+    V.project(camera);
+    if(V.z > 1 || V.z < -1){ d.el.style.display = 'none'; return; }
+    var x = (V.x*0.5 + 0.5)*W, y = (-V.y*0.5 + 0.5)*H;
+    if(x < -40 || x > W+40 || y < -20 || y > H+20){ d.el.style.display = 'none'; return; }
+    d.el.style.display = 'flex';
+    d.el.style.transform = 'translate3d(' + (x-3.5).toFixed(1) + 'px,' + (y-7).toFixed(1) + 'px,0)';
+  });
+}
+
+/* ================= toggles ================= */
+var tgXray = document.getElementById('tgXray'),
+    tgLbl  = document.getElementById('tgLbl'),
+    tgDim  = document.getElementById('tgDim'),
+    tgGrid = document.getElementById('tgGrid'),
+    tgRot  = document.getElementById('tgRot');
+
+tgXray.addEventListener('change', function(){
+  if(tgXray.checked){
+    shell.material.opacity = 0.13;
+    shell.castShadow = false;
+    if(!tgLbl.checked) tgLbl.checked = true;
+  } else {
+    shell.material.opacity = 1;
+    shell.castShadow = true;
+  }
+});
+tgGrid.addEventListener('change', function(){ grid.visible = tgGrid.checked; });
+tgDim.addEventListener('change', function(){ dimGroup.visible = tgDim.checked; });
+if(RM) tgRot.checked = false;
+
+/* ================= orbit controls ================= */
+var pointers = {}, pCount = 0, lastPinch = 0, dragging = false;
+
+canvas.addEventListener('pointerdown', function(e){
+  canvas.setPointerCapture(e.pointerId);
+  pointers[e.pointerId] = {x:e.clientX, y:e.clientY};
+  pCount++;
+  dragging = true;
+  if(pCount === 2){
+    var ids = Object.keys(pointers);
+    var a = pointers[ids[0]], b = pointers[ids[1]];
+    lastPinch = Math.hypot(a.x-b.x, a.y-b.y);
+  }
+});
+canvas.addEventListener('pointermove', function(e){
+  if(!pointers[e.pointerId]) return;
+  if(pCount === 1){
+    var p = pointers[e.pointerId];
+    var dx = e.clientX - p.x, dy = e.clientY - p.y;
+    orb.thT -= dx * 0.0052;
+    orb.phT -= dy * 0.0042;
+    orb.phT = Math.max(0.12, Math.min(1.52, orb.phT));
+    if(tgRot.checked) tgRot.checked = false;
+  }
+  pointers[e.pointerId].x = e.clientX;
+  pointers[e.pointerId].y = e.clientY;
+  if(pCount === 2){
+    var ids = Object.keys(pointers);
+    var a = pointers[ids[0]], b = pointers[ids[1]];
+    var d = Math.hypot(a.x-b.x, a.y-b.y);
+    if(lastPinch > 0){
+      orb.rT *= lastPinch / d;
+      orb.rT = Math.max(32, Math.min(180, orb.rT));
+    }
+    lastPinch = d;
+  }
+});
+function endPointer(e){
+  if(pointers[e.pointerId]){ delete pointers[e.pointerId]; pCount--; }
+  if(pCount <= 0){ pCount = 0; dragging = false; }
+  lastPinch = 0;
+}
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+canvas.addEventListener('wheel', function(e){
+  e.preventDefault();
+  orb.rT *= 1 + e.deltaY * 0.0011;
+  orb.rT = Math.max(32, Math.min(180, orb.rT));
+}, {passive:false});
+function resetCam(){
+  orb.thT = ORB0.th; orb.phT = ORB0.ph; orb.rT = ORB0.r;
+}
+canvas.addEventListener('dblclick', resetCam);
+document.getElementById('btnCam').addEventListener('click', resetCam);
+
+/* panel toggle (mobile) */
+var panel = document.getElementById('panel');
+document.getElementById('panelBtn').addEventListener('click', function(){
+  panel.classList.toggle('open');
+});
+
+/* ================= main loop ================= */
+function resize(){
+  var w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w/h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+setMode(mode);
+if(RM){
+  manualPose = {};
+  for(var k0 in PRESETS.ready) manualPose[k0] = PRESETS.ready[k0];
+  syncSliders();
+}
+
+var clock = new THREE.Clock();
+function frame(){
+  requestAnimationFrame(frame);
+  var t = clock.getElapsedTime();
+
+  var pose;
+  if(mode === 'manual'){ pose = manualPose; }
+  else { pose = zeroPose(); anims[mode](t, pose); }
+  applyPose(pose);
+  livePose = pose;
+
+  /* LED blink */
+  chestLED.visible = (t % 1.6) < 1.25;
+
+  if(tgRot.checked && !dragging) orb.thT += 0.0017;
+  orb.th += (orb.thT - orb.th) * 0.12;
+  orb.ph += (orb.phT - orb.ph) * 0.12;
+  orb.r  += (orb.rT  - orb.r ) * 0.12;
+  camera.position.set(
+    TARGET.x + orb.r * Math.sin(orb.ph) * Math.sin(orb.th),
+    TARGET.y + orb.r * Math.cos(orb.ph),
+    TARGET.z + orb.r * Math.sin(orb.ph) * Math.cos(orb.th)
+  );
+  camera.lookAt(TARGET);
+
+  renderer.render(scene, camera);
+  updateLabels();
+}
+frame();
+})();
+</script>
+</body>
+</html>
