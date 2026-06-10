@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PIT KARYA-01 — Simulasi Operasi Tambang</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#1a1612; --panel:#241f19; --panel2:#2c261e; --line:#3a3128;
+  --ink:#ede4d4; --ink2:#a89a82; --ink3:#7a6e5c;
+  --yellow:#f5b82e; --laterite:#c45a2b; --green:#7fb069; --teal:#6fa8b5; --red:#d9534f;
+  --disp:"Saira Condensed",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,sans-serif;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:18px;padding:10px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand h1{font:700 24px/1 var(--disp);letter-spacing:.04em;color:var(--yellow)}
+.brand span{font-size:11px;color:var(--ink2);text-transform:uppercase;letter-spacing:.08em}
+.clock{margin-left:auto;text-align:right}
+.clock #clock{font:500 22px/1 var(--mono);color:var(--ink)}
+.clock #meta{font-size:11px;color:var(--ink2);text-transform:uppercase;letter-spacing:.08em}
+.ctrl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+button{font:600 12px var(--disp);letter-spacing:.05em;text-transform:uppercase;background:var(--panel);color:var(--ink2);border:none;padding:7px 11px;cursor:pointer}
+button:hover{color:var(--ink)}
+button:focus-visible{outline:2px solid var(--yellow);outline-offset:-2px}
+.seg button.on{background:var(--yellow);color:#241a05}
+.btn{border:1px solid var(--line);border-radius:6px}
+.btn.warn{color:var(--yellow)}
+.statusbar{display:flex;gap:10px;align-items:center;padding:8px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.statusbar .lbl{font:600 11px var(--disp);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.chip{display:inline-flex;align-items:center;gap:6px;font:500 12px var(--mono);padding:3px 9px;border:1px solid var(--line);border-radius:99px;color:var(--ink2)}
+.chip .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+main{flex:1;display:flex;min-height:0}
+.stage{flex:1;min-width:0;position:relative;padding:12px;display:flex;align-items:flex-start}
+canvas{width:100%;aspect-ratio:16/9;display:block;border:1px solid var(--line);border-radius:10px;background:#101418}
+.banner{position:absolute;top:26px;left:50%;transform:translateX(-50%);background:rgba(26,18,10,.88);border:1px solid var(--yellow);color:var(--yellow);font:600 13px var(--disp);letter-spacing:.12em;text-transform:uppercase;padding:8px 16px;border-radius:8px}
+.hidden{display:none}
+aside{width:392px;border-left:1px solid var(--line);overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:14px}
+aside h2{font:600 12px var(--disp);letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin-bottom:7px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.kpi .k{font:600 10px var(--disp);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.kpi .v{font:500 19px/1.25 var(--mono);color:var(--ink)}
+.kpi .v small{font-size:11px;color:var(--ink2)}
+#chart{display:flex;align-items:flex-end;gap:5px;height:92px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px}
+#chart .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:2px;min-width:0}
+#chart .bars{display:flex;gap:2px;align-items:flex-end;height:62px}
+#chart .b{width:7px;border-radius:2px 2px 0 0}
+#chart .b.ob{background:var(--yellow)}
+#chart .b.co{background:#8d8478}
+#chart .hl{font:400 9px var(--mono);color:var(--ink3)}
+#chart .empty{margin:auto;color:var(--ink3);font-size:12px}
+.legend{display:flex;gap:14px;margin-top:6px;font-size:11px;color:var(--ink2)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.fctl{display:flex;justify-content:space-between;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin-bottom:6px}
+.fctl b{font:600 13px var(--disp);letter-spacing:.06em}
+.fctl .mini{display:flex;gap:5px;align-items:center}
+.fctl .mini button{padding:2px 9px;border:1px solid var(--line);border-radius:5px;font-size:14px}
+.fctl .n{font:500 14px var(--mono);min-width:18px;text-align:center}
+#fleet{display:flex;flex-direction:column;gap:4px}
+.trow{display:grid;grid-template-columns:52px 44px 1fr 64px;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:5px 9px}
+.trow .tid{font:500 12px var(--mono)}
+.trow .tag{font:600 10px var(--disp);letter-spacing:.08em;text-align:center;border-radius:4px;padding:2px 0}
+.tag.ob{background:#4a3a14;color:var(--yellow)} .tag.co{background:#2e2c2a;color:#cfc6b8}
+.trow .tst{font-size:11px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow .tst.bad{color:var(--red)}
+.fbar{height:7px;background:#171310;border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.fbar i{display:block;height:100%;background:var(--green)}
+.fbar i.low{background:var(--laterite)}
+#log{display:flex;flex-direction:column;gap:3px;max-height:200px;overflow-y:auto;font:400 11.5px/1.5 var(--mono)}
+#log .e{display:flex;gap:8px;color:var(--ink2)}
+#log .e .t{color:var(--ink3);flex:0 0 86px}
+#log .e.warn{color:var(--yellow)} #log .e.bad{color:var(--red)} #log .e.good{color:var(--green)}
+footer{padding:6px 16px;border-top:1px solid var(--line);font-size:11px;color:var(--ink3)}
+@media (max-width:980px){ main{flex-direction:column} aside{width:auto;border-left:none;border-top:1px solid var(--line)} }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>PIT KARYA-01</h1>
+    <span>Simulasi operasi hauling open pit · OB removal &amp; coal getting · Kaltim</span>
+  </div>
+  <div class="ctrl">
+    <div class="seg" id="speedSeg">
+      <button data-s="0.5">0.5×</button>
+      <button data-s="1" class="on">1×</button>
+      <button data-s="4">4×</button>
+      <button data-s="12">12×</button>
+    </div>
+    <button class="btn warn" id="pauseBtn">Jeda</button>
+    <button class="btn" id="resetBtn">Reset</button>
+  </div>
+  <div class="clock"><div id="clock">06:00</div><div id="meta">Hari 1 · Shift 1</div></div>
+</header>
+
+<div class="statusbar">
+  <span class="lbl">Cuaca</span>
+  <div class="seg" id="wxSeg">
+    <button data-w="auto" class="on">Auto</button>
+    <button data-w="0">Cerah</button>
+    <button data-w="1">Gerimis</button>
+    <button data-w="2">Deras</button>
+  </div>
+  <span class="chip" id="wxChip"><span class="dot"></span><span id="wxTxt">Cerah</span></span>
+  <span class="chip"><span class="dot" style="background:var(--teal)"></span><span id="opsTxt">Operasi normal</span></span>
+</div>
+
+<main>
+  <div class="stage">
+    <canvas id="cv"></canvas>
+    <div class="banner hidden" id="banner"></div>
+  </div>
+  <aside>
+    <section>
+      <h2>KPI Operasi</h2>
+      <div class="kpis">
+        <div class="kpi"><div class="k">OB Removal</div><div class="v"><span id="kOb">0</span> <small>bcm</small></div></div>
+        <div class="kpi"><div class="k">Coal Getting</div><div class="v"><span id="kCoal">0</span> <small>ton</small></div></div>
+        <div class="kpi"><div class="k">Ritase Total</div><div class="v"><span id="kRit">0</span> <small>rit</small></div></div>
+        <div class="kpi"><div class="k">Fuel Terpakai</div><div class="v"><span id="kFuel">0</span> <small>L</small></div></div>
+        <div class="kpi"><div class="k">MF Front OB</div><div class="v"><span id="kMfOb">—</span></div></div>
+        <div class="kpi"><div class="k">MF Front Coal</div><div class="v"><span id="kMfCo">—</span></div></div>
+        <div class="kpi"><div class="k">Cycle Rata²</div><div class="v"><span id="kCyc">—</span> <small>mnt</small></div></div>
+        <div class="kpi"><div class="k">Availability</div><div class="v"><span id="kAv">100</span> <small>%</small></div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Produksi per Jam</h2>
+      <div id="chart"><div class="empty">Belum ada data jam penuh</div></div>
+      <div class="legend">
+        <span><i style="background:var(--yellow)"></i>OB (bcm)</span>
+        <span><i style="background:#8d8478"></i>Coal (ton)</span>
+        <span style="margin-left:auto">Target MF ≈ 1.00</span>
+      </div>
+    </section>
+    <section>
+      <h2>Armada Dump Truck</h2>
+      <div class="fctl"><b>FRONT OB</b><div class="mini"><button data-f="OB" data-d="-1" aria-label="Kurangi DT OB">−</button><span class="n" id="nOb">5</span><button data-f="OB" data-d="1" aria-label="Tambah DT OB">+</button></div></div>
+      <div class="fctl"><b>FRONT COAL</b><div class="mini"><button data-f="COAL" data-d="-1" aria-label="Kurangi DT Coal">−</button><span class="n" id="nCo">4</span><button data-f="COAL" data-d="1" aria-label="Tambah DT Coal">+</button></div></div>
+      <div id="fleet"></div>
+    </section>
+    <section>
+      <h2>Log Kejadian</h2>
+      <div id="log"></div>
+    </section>
+  </aside>
+</main>
+<footer>1 detik nyata = 30 detik simulasi (1×) · Shift 1: 06.00–18.00 · Shift 2: 18.00–06.00 · P2H &amp; briefing 15 menit tiap pergantian shift</footer>
+
+<script>
+'use strict';
+/* ================= UTIL ================= */
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('id-ID');
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+function rev(p){return p.slice().reverse();}
+function cat(a,b){return a.concat(b.slice(1));}
+function makePath(pts){
+  const segs=[];let total=0;
+  for(let i=0;i<pts.length-1;i++){
+    const a=pts[i],b=pts[i+1];
+    const len=Math.hypot(b[0]-a[0],b[1]-a[1]);
+    segs.push({a,b,len,ang:Math.atan2(b[1]-a[1],b[0]-a[0]),start:total});
+    total+=len;
+  }
+  return {pts,segs,total,
+    at(d){
+      d=clamp(d,0,total);
+      let s=segs[segs.length-1];
+      for(const g of segs){ if(d<=g.start+g.len){s=g;break;} }
+      const f=s.len? (d-s.start)/s.len : 0;
+      return {x:s.a[0]+(s.b[0]-s.a[0])*f, y:s.a[1]+(s.b[1]-s.a[1])*f, ang:s.ang};
+    }};
+}
+/* seeded random utk tekstur statis */
+function lcg(seed){let s=seed;return()=>{s=(s*48271)%2147483647;return s/2147483647;};}
+
+/* ================= PETA ================= */
+const W=1280,H=720;
+const F_OB=[258,468], F_COAL=[382,512], J=[560,258], D=[952,142], R=[1002,478], FS=[706,362];
+const pOBJ=[F_OB,[318,428],[398,358],[480,300],J];
+const pCOJ=[F_COAL,[436,446],[480,300],J];
+const pJD=[J,[700,198],[852,160],D];
+const pJR=[J,[700,326],[852,418],R];
+const pJFS=[J,[640,308],FS];
+const PATHS={
+  OB:{
+    out: makePath(cat(pOBJ,pJD)),
+    back: makePath(cat(rev(pJD),rev(pOBJ))),
+    dumpToFuel: makePath(cat(rev(pJD),pJFS)),
+    fuelToFront: makePath(cat(rev(pJFS),rev(pOBJ)))
+  },
+  COAL:{
+    out: makePath(cat(pCOJ,pJR)),
+    back: makePath(cat(rev(pJR),rev(pCOJ))),
+    dumpToFuel: makePath(cat(rev(pJR),pJFS)),
+    fuelToFront: makePath(cat(rev(pJFS),rev(pCOJ)))
+  }
+};
+const FRONTS={
+  OB:  {pos:F_OB,  exPos:[226,486], loadTime:140, cap:22, unit:'bcm', qdir:[0.83,-0.55], faceAng:Math.atan2(40,-60), busy:null, q:[], anim:0},
+  COAL:{pos:F_COAL,exPos:[414,534], loadTime:170, cap:30, unit:'ton', qdir:[0.63,-0.78], faceAng:Math.atan2(66,-54), busy:null, q:[], anim:0}
+};
+const LAMPS=[F_OB,F_COAL,D,R,FS];
+
+/* ================= STATE ================= */
+const SIM={
+  t:6*3600, mult:1, paused:false,
+  weather:0, auto:true,           // 0 cerah, 1 gerimis, 2 deras
+  standbyUntil:0,
+  prod:{OB:0,COAL:0}, rits:0, fuelL:0,
+  cycles:{OB:[],COAL:[]},
+  hourly:[], lastHour:6, snap:{OB:0,COAL:0},
+  logDirty:true
+};
+const CAUSES=['hose hidrolik bocor','ban depan kanan kempes','sensor temperatur abnormal','vanbelt alternator putus','rem angin lemah','greasing line buntu'];
+const trucks=[]; let seq=1;
+const LOADED_V=1.6, EMPTY_V=2.4, DUMP_T=60, REFUEL_T=360;
+
+function hourOf(t){return (t/3600)%24;}
+function clockStr(t){
+  const h=Math.floor(t/3600)%24, m=Math.floor(t/60)%60;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+}
+function addLog(msg,cls){
+  SIM.logEntries=SIM.logEntries||[];
+  SIM.logEntries.unshift({t:'H'+(Math.floor(SIM.t/86400)+1)+' '+clockStr(SIM.t), msg, cls:cls||''});
+  if(SIM.logEntries.length>60)SIM.logEntries.pop();
+  SIM.logDirty=true;
+}
+
+function spawnTruck(frontKey, atFront){
+  const id='DT-'+String(seq++).padStart(2,'0');
+  const tr={id, front:frontKey, state:'queue', dist:0, path:null, timer:0,
+            fuel:70+Math.random()*30, load:0, lastDump:null,
+            x:0,y:0,ang:0, prev:null};
+  if(atFront){
+    FRONTS[frontKey].q.push(tr);
+  }else{
+    tr.state='return';
+    tr.path=PATHS[frontKey].fuelToFront;
+    tr.dist=0; tr.fuel=100;
+    const p=tr.path.at(0); tr.x=p.x; tr.y=p.y; tr.ang=p.ang;
+  }
+  trucks.push(tr);
+  return tr;
+}
+function initFleet(){
+  for(let i=0;i<5;i++)spawnTruck('OB',true);
+  for(let i=0;i<4;i++)spawnTruck('COAL',true);
+}
+initFleet();
+addLog('Shift 1 dimulai. Operasi normal, cuaca cerah.','good');
+
+/* ================= SIMULASI ================= */
+function frozen(){ return SIM.weather===2 || SIM.t<SIM.standbyUntil; }
+
+function statusTxt(tr){
+  switch(tr.state){
+    case 'to_front':return 'Menuju front';
+    case 'queue':return 'Antri di front';
+    case 'loading':return 'Loading';
+    case 'haul':return 'Hauling isi';
+    case 'dump':return 'Dumping';
+    case 'return':return 'Kembali kosong';
+    case 'to_fuel':return 'Menuju fuel station';
+    case 'refuel':return 'Refueling';
+    case 'breakdown':return 'Breakdown';
+  }
+  return tr.state;
+}
+
+function moveTruck(tr,dts,wf){
+  const loaded=tr.load>0;
+  const v=(loaded?LOADED_V:EMPTY_V)*wf;
+  tr.dist+=v*dts;
+  const burn=(loaded?0.0032:0.0021)*dts; // ±70 L/jam isi, ±45 L/jam kosong (tangki 600 L)
+  tr.fuel=Math.max(0,tr.fuel-burn); SIM.fuelL+=burn*6;
+  const p=tr.path.at(tr.dist);
+  // offset lajur kanan
+  const off=5, ox=Math.cos(p.ang+Math.PI/2)*off, oy=Math.sin(p.ang+Math.PI/2)*off;
+  tr.x=p.x+ox; tr.y=p.y+oy; tr.ang=p.ang;
+  return tr.dist>=tr.path.total;
+}
+
+function updateTruck(tr,dts){
+  const fz=frozen();
+  if(tr.state==='breakdown'){
+    tr.timer-=dts;
+    if(tr.timer<=0){ tr.state=tr.prev; tr.prev=null; addLog(tr.id+' selesai perbaikan, kembali operasi.','good'); }
+    return;
+  }
+  if(fz){ tr.fuel=Math.max(0,tr.fuel-0.00055*dts); SIM.fuelL+=0.00055*dts*6; return; }
+  const wf=SIM.weather===1?0.75:1;
+  const moving=['to_front','haul','return','to_fuel'].includes(tr.state);
+  if(moving && Math.random()<dts*0.04/3600){
+    tr.prev=tr.state; tr.state='breakdown';
+    tr.timer=1200+Math.random()*2400;
+    addLog(tr.id+' breakdown: '+CAUSES[Math.floor(Math.random()*CAUSES.length)]+' (±'+Math.round(tr.timer/60)+' mnt).','bad');
+    return;
+  }
+  const F=FRONTS[tr.front], P=PATHS[tr.front];
+  switch(tr.state){
+    case 'queue':{
+      tr.fuel=Math.max(0,tr.fuel-0.00055*dts); SIM.fuelL+=0.00055*dts*6;
+      const i=F.q.indexOf(tr);
+      const k=(i<0?0:i)+1;
+      tr.x=F.pos[0]+F.qdir[0]*24*k; tr.y=F.pos[1]+F.qdir[1]*24*k;
+      tr.ang=F.faceAng;
+      break;
+    }
+    case 'loading':{
+      tr.timer-=dts; F.anim+=dts;
+      tr.x=F.pos[0]; tr.y=F.pos[1]; tr.ang=F.faceAng;
+      if(tr.timer<=0){
+        tr.load=F.cap; F.busy=null;
+        tr.state='haul'; tr.path=P.out; tr.dist=0;
+      }
+      break;
+    }
+    case 'haul':
+      if(moveTruck(tr,dts,wf)){ tr.state='dump'; tr.timer=DUMP_T; }
+      break;
+    case 'dump':
+      tr.timer-=dts;
+      if(tr.timer<=0){
+        SIM.prod[tr.front]+=tr.load; SIM.rits++;
+        if(tr.lastDump!=null){
+          const c=SIM.cycles[tr.front]; c.push(SIM.t-tr.lastDump);
+          if(c.length>14)c.shift();
+        }
+        tr.lastDump=SIM.t; tr.load=0;
+        if(tr.fuel<25){
+          tr.state='to_fuel'; tr.path=P.dumpToFuel; tr.dist=0;
+          addLog(tr.id+' fuel '+Math.round(tr.fuel)+'%, menuju fuel station.','warn');
+        }else{
+          tr.state='return'; tr.path=P.back; tr.dist=0;
+        }
+      }
+      break;
+    case 'return':
+      if(moveTruck(tr,dts,wf)){ tr.state='queue'; F.q.push(tr); }
+      break;
+    case 'to_fuel':
+      if(moveTruck(tr,dts,wf)){ tr.state='refuel'; tr.timer=REFUEL_T; tr.x=FS[0]; tr.y=FS[1]+12; tr.ang=0; }
+      break;
+    case 'refuel':
+      tr.timer-=dts;
+      if(tr.timer<=0){ tr.fuel=100; tr.state='return'; tr.path=P.fuelToFront; tr.dist=0; }
+      break;
+  }
+}
+
+function hourTick(){
+  const h=Math.floor(SIM.t/3600)%24;
+  if(h===SIM.lastHour)return;
+  // catat produksi jam sebelumnya
+  const ob=SIM.prod.OB-SIM.snap.OB, co=SIM.prod.COAL-SIM.snap.COAL;
+  SIM.hourly.push({h:String(SIM.lastHour).padStart(2,'0'), ob, co});
+  if(SIM.hourly.length>12)SIM.hourly.shift();
+  SIM.snap={OB:SIM.prod.OB, COAL:SIM.prod.COAL};
+  SIM.lastHour=h; SIM.chartDirty=true;
+  // pergantian shift
+  if(h===6||h===18){
+    SIM.standbyUntil=SIM.t+900;
+    addLog('Pergantian shift — P2H & briefing 15 menit, unit standby.','warn');
+  }
+  // cuaca otomatis
+  if(SIM.auto){
+    const r=Math.random(), w=SIM.weather;
+    let nw=w;
+    if(w===0 && r<0.12)nw=1;
+    else if(w===1){ if(r<0.30)nw=0; else if(r<0.45)nw=2; }
+    else if(w===2 && r<0.40)nw=1;
+    if(nw!==w)setWeather(nw,true);
+  }
+}
+
+function setWeather(w,auto){
+  const was=SIM.weather; SIM.weather=w;
+  const nm=['cerah','gerimis','hujan deras'][w];
+  if(w!==was){
+    if(w===2)addLog('Hujan deras — jalan hauling slippery, operasi dihentikan sementara.','bad');
+    else if(was===2)addLog('Hujan reda ('+nm+'), operasi dilanjutkan setelah cek jalan.','good');
+    else addLog('Cuaca berubah: '+nm+'.',w===1?'warn':'');
+  }
+  if(!auto)SIM.auto=false;
+  syncWxUI();
+}
+
+function step(dts){
+  SIM.t+=dts;
+  hourTick();
+  for(const tr of trucks)updateTruck(tr,dts);
+  if(!frozen()){
+    for(const k of ['OB','COAL']){
+      const F=FRONTS[k];
+      if(!F.busy && F.q.length){
+        F.busy=F.q.shift();
+        F.busy.state='loading';
+        F.busy.timer=F.loadTime;
+      }
+    }
+  }
+}
+
+/* ================= ARMADA +/- ================= */
+function trucksOf(f){return trucks.filter(t=>t.front===f);}
+function addTruck(f){
+  if(trucksOf(f).length>=8)return;
+  const tr=spawnTruck(f,false);
+  addLog(tr.id+' bergabung ke Front '+(f==='OB'?'OB':'Coal')+' (berangkat dari fuel station).');
+}
+function removeTruck(f){
+  const list=trucksOf(f);
+  if(list.length<=1)return;
+  const tr=list[list.length-1];
+  const F=FRONTS[f];
+  const qi=F.q.indexOf(tr); if(qi>=0)F.q.splice(qi,1);
+  if(F.busy===tr)F.busy=null;
+  trucks.splice(trucks.indexOf(tr),1);
+  addLog(tr.id+' ditarik ke parkiran.');
+}
+
+/* ================= GAMBAR ================= */
+const cv=$('cv'), ctx=cv.getContext('2d');
+let scale=1;
+function resize(){
+  const dpr=window.devicePixelRatio||1;
+  const w=cv.clientWidth;
+  cv.width=Math.round(w*dpr); cv.height=Math.round(w*9/16*dpr);
+  scale=cv.width/W;
+}
+window.addEventListener('resize',()=>{resize();});
+resize();
+
+/* terrain statis (offscreen) */
+const terra=document.createElement('canvas'); terra.width=W; terra.height=H;
+(function buildTerrain(){
+  const c=terra.getContext('2d');
+  // vegetasi
+  c.fillStyle='#4f6b3f'; c.fillRect(0,0,W,H);
+  const rnd=lcg(20260610);
+  for(let i=0;i<2600;i++){
+    const x=rnd()*W, y=rnd()*H, r=1+rnd()*2.6;
+    c.fillStyle=rnd()<0.5?'#43603a':'#5a7847';
+    c.beginPath(); c.arc(x,y,r,0,7); c.fill();
+  }
+  // area terbuka (clearing) berdebu
+  c.fillStyle='#b59a6b';
+  const blob=(x,y,rx,ry,rot)=>{c.beginPath();c.ellipse(x,y,rx,ry,rot||0,0,7);c.fill();};
+  blob(330,430,330,270,-0.3);
+  blob(560,258,150,110,0.2); blob(700,250,140,100,0.1);
+  blob(852,160,150,95,0); blob(952,142,130,90,0);
+  blob(700,326,120,90,0.4); blob(852,418,130,95,0.4);
+  blob(1002,478,150,105,0.1); blob(706,362,110,85,0);
+  blob(640,308,90,70,0.5);
+  // tekstur debu
+  for(let i=0;i<1600;i++){
+    const x=rnd()*W, y=rnd()*H;
+    c.fillStyle=rnd()<0.5?'rgba(140,115,75,.25)':'rgba(220,200,160,.18)';
+    c.fillRect(x,y,2,2);
+  }
+  // jenjang pit
+  const bench=[[290,215,'#a3805b'],[240,178,'#967250'],[190,140,'#876245'],[145,103,'#7a543b'],[100,70,'#6e4a33']];
+  for(const [rx,ry,col] of bench){
+    c.fillStyle=col;
+    c.beginPath(); c.ellipse(330,430,rx,ry,-0.35,0,7); c.fill();
+    c.strokeStyle='rgba(50,32,18,.45)'; c.lineWidth=2; c.stroke();
+  }
+  // seam batubara di jenjang bawah
+  c.strokeStyle='#26221f'; c.lineWidth=9;
+  c.beginPath(); c.ellipse(330,430,122,86,-0.35,0.3,1.9); c.stroke();
+  // sump pit bottom
+  c.fillStyle='#3f6f6b';
+  c.beginPath(); c.ellipse(312,408,42,26,-0.35,0,7); c.fill();
+  c.strokeStyle='rgba(20,40,40,.5)'; c.lineWidth=2; c.stroke();
+  // jalan hauling
+  const road=p=>{
+    c.beginPath(); c.moveTo(p[0][0],p[0][1]);
+    for(let i=1;i<p.length;i++)c.lineTo(p[i][0],p[i][1]);
+    c.lineCap='round'; c.lineJoin='round';
+    c.strokeStyle='#6b655c'; c.lineWidth=17; c.stroke();
+    c.strokeStyle='#7d766b'; c.lineWidth=13; c.stroke();
+    c.setLineDash([10,12]); c.strokeStyle='rgba(235,225,205,.45)'; c.lineWidth=1.4; c.stroke();
+    c.setLineDash([]);
+  };
+  road(cat(pOBJ,pJD)); road(pCOJ); road(pJR); road(pJFS);
+  // disposal
+  c.fillStyle='#7a5b3f';
+  blob.call(null,930,158,70,42,0.1); blob.call(null,975,132,62,38,0.05);
+  c.fillStyle='#8f6c4a'; blob.call(null,952,142,46,26,0.05);
+  // ROM stockpile
+  c.fillStyle='#9c8a6a'; c.fillRect(932,428,150,104);
+  c.strokeStyle='rgba(60,45,25,.5)'; c.strokeRect(932,428,150,104);
+  c.fillStyle='#2e2c2a';
+  blob.call(null,978,470,34,20,0); blob.call(null,1030,488,40,23,0); blob.call(null,995,505,30,17,0);
+  // fuel station
+  c.fillStyle='#d9d2c4'; c.fillRect(682,330,52,18);
+  c.fillStyle='#c45a2b'; c.beginPath(); c.ellipse(744,338,12,8,0,0,7); c.fill();
+  c.strokeStyle='rgba(60,40,20,.6)'; c.strokeRect(682,330,52,18);
+  // workshop
+  c.fillStyle='#8a8478'; c.fillRect(736,584,64,34);
+  c.fillStyle='#5d5850'; c.fillRect(736,580,64,8);
+  // office + tiang bendera
+  c.fillStyle='#cfc6b8'; c.fillRect(1078,592,56,30);
+  c.strokeStyle='#ede4d4'; c.beginPath(); c.moveTo(1142,622); c.lineTo(1142,584); c.stroke();
+  c.fillStyle='#d9534f'; c.fillRect(1142,584,14,8);
+  // tiang towerlamp
+  for(const L of LAMPS){
+    c.strokeStyle='#3a3128'; c.lineWidth=2.5;
+    c.beginPath(); c.moveTo(L[0]+16,L[1]-6); c.lineTo(L[0]+16,L[1]-26); c.stroke();
+    c.fillStyle='#ede4d4'; c.fillRect(L[0]+11,L[1]-30,10,5);
+  }
+  // label
+  c.font='600 12px "Saira Condensed",sans-serif';
+  c.fillStyle='rgba(40,28,14,.85)';
+  const lbl=(t,x,y)=>{c.fillText(t.toUpperCase(),x,y);};
+  lbl('Front OB',218,512); lbl('Front Coal',352,556);
+  lbl('Disposal OB',900,108); lbl('ROM Stockpile',938,422);
+  lbl('Fuel Station',668,326); lbl('Workshop',738,634); lbl('Office',1078,588);
+  lbl('Sump',294,404);
+})();
+
+function drawTruck(tr,night){
+  ctx.save(); ctx.translate(tr.x,tr.y); ctx.rotate(tr.ang);
+  ctx.fillStyle='rgba(0,0,0,.22)'; ctx.fillRect(-13,-3.5,26,10);
+  ctx.fillStyle='#cfc6b8'; ctx.fillRect(-13,-5.5,18,11);
+  if(tr.load>0){
+    let a=1;
+    if(tr.state==='dump')a=clamp(tr.timer/DUMP_T,0,1);
+    ctx.globalAlpha=a;
+    ctx.fillStyle=tr.front==='OB'?'#8a6a45':'#26221f';
+    ctx.fillRect(-11.5,-4,15,8);
+    ctx.globalAlpha=1;
+  }
+  ctx.fillStyle='#e8b73c'; ctx.fillRect(5,-5.5,8,11);
+  ctx.fillStyle='#3a3a3a'; ctx.fillRect(9.5,-4,2.5,8);
+  ctx.strokeStyle='rgba(40,30,20,.85)'; ctx.lineWidth=1; ctx.strokeRect(-13,-5.5,26,11);
+  ctx.restore();
+  if(tr.state==='breakdown'){
+    ctx.fillStyle='#d9534f';
+    ctx.beginPath(); ctx.arc(tr.x,tr.y-14,6,0,7); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='bold 9px monospace'; ctx.textAlign='center';
+    ctx.fillText('!',tr.x,tr.y-11); ctx.textAlign='left';
+  }
+}
+function drawExca(F){
+  const [x,y]=F.exPos;
+  ctx.save(); ctx.translate(x,y);
+  ctx.fillStyle='#2c261e'; ctx.fillRect(-13,4,26,8);          // track
+  ctx.fillStyle='#e8b73c'; ctx.fillRect(-10,-6,20,11);        // body
+  ctx.fillStyle='#3a3a3a'; ctx.fillRect(2,-4,6,7);            // kabin
+  const loading=!!F.busy;
+  const sw=loading?Math.sin(F.anim*1.6)*0.3:0;
+  const a=-0.85+sw;
+  const bx=Math.cos(a)*30, by=Math.sin(a)*30;
+  ctx.strokeStyle='#c79a2a'; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.moveTo(8,-3); ctx.lineTo(8+bx,-3+by); ctx.stroke();
+  ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(8+bx,-3+by); ctx.lineTo(8+bx+10,-3+by+12); ctx.stroke();
+  ctx.fillStyle='#6e4a33';
+  ctx.fillRect(8+bx+7,-3+by+10,9,7);                          // bucket
+  ctx.restore();
+}
+function nightAlpha(h){
+  if(h>=7&&h<17)return 0;
+  if(h>=17&&h<19)return (h-17)/2*0.55;
+  if(h>=5&&h<7)return (7-h)/2*0.55;
+  return 0.55;
+}
+function draw(){
+  ctx.setTransform(scale,0,0,scale,0,0);
+  ctx.clearRect(0,0,W,H);
+  ctx.drawImage(terra,0,0);
+  for(const k of ['OB','COAL'])drawExca(FRONTS[k]);
+  const h=hourOf(SIM.t), na=nightAlpha(h);
+  for(const tr of trucks)drawTruck(tr,na>0.2);
+  // hujan: gelapkan + garis
+  if(SIM.weather>0){
+    const w=SIM.weather===1?0.5:1;
+    ctx.fillStyle='rgba(40,52,64,'+(0.13+0.2*w)+')'; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(200,220,235,'+(0.25+0.2*w)+')'; ctx.lineWidth=1;
+    const n=Math.round(70*w);
+    ctx.beginPath();
+    for(let i=0;i<n;i++){
+      const x=Math.random()*W, y=Math.random()*H, l=8+Math.random()*10;
+      ctx.moveTo(x,y); ctx.lineTo(x-3,y+l);
+    }
+    ctx.stroke();
+  }
+  // malam
+  if(na>0){
+    ctx.fillStyle='rgba(10,16,42,'+na+')'; ctx.fillRect(0,0,W,H);
+    ctx.globalCompositeOperation='lighter';
+    for(const L of LAMPS){
+      const g=ctx.createRadialGradient(L[0]+16,L[1]-26,3,L[0]+16,L[1]-26,72);
+      g.addColorStop(0,'rgba(255,224,140,'+(0.5*na/0.55)+')');
+      g.addColorStop(1,'rgba(255,224,140,0)');
+      ctx.fillStyle=g;
+      ctx.beginPath(); ctx.arc(L[0]+16,L[1]-26,72,0,7); ctx.fill();
+    }
+    for(const tr of trucks){
+      if(!['haul','return','to_front','to_fuel'].includes(tr.state))continue;
+      ctx.save(); ctx.translate(tr.x,tr.y); ctx.rotate(tr.ang);
+      const g=ctx.createLinearGradient(13,0,52,0);
+      g.addColorStop(0,'rgba(255,240,190,'+(0.4*na/0.55)+')');
+      g.addColorStop(1,'rgba(255,240,190,0)');
+      ctx.fillStyle=g;
+      ctx.beginPath(); ctx.moveTo(13,-3); ctx.lineTo(52,-12); ctx.lineTo(52,12); ctx.lineTo(13,3); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalCompositeOperation='source-over';
+  }
+}
+
+/* ================= UI ================= */
+function avgMin(arr){ if(!arr.length)return null; return arr.reduce((a,b)=>a+b,0)/arr.length; }
+function mfOf(k){
+  const c=avgMin(SIM.cycles[k]);
+  if(!c)return null;
+  return trucksOf(k).length*FRONTS[k].loadTime/c;
+}
+let lastUI=0;
+function uiTick(now){
+  if(now-lastUI<200)return; lastUI=now;
+  const day=Math.floor(SIM.t/86400)+1, h=Math.floor(SIM.t/3600)%24;
+  $('clock').textContent=clockStr(SIM.t);
+  $('meta').textContent='Hari '+day+' · Shift '+((h>=6&&h<18)?'1':'2');
+  $('kOb').textContent=fmt(SIM.prod.OB);
+  $('kCoal').textContent=fmt(SIM.prod.COAL);
+  $('kRit').textContent=fmt(SIM.rits);
+  $('kFuel').textContent=fmt(SIM.fuelL);
+  const m1=mfOf('OB'), m2=mfOf('COAL');
+  $('kMfOb').textContent=m1?m1.toFixed(2):'—';
+  $('kMfCo').textContent=m2?m2.toFixed(2):'—';
+  const all=SIM.cycles.OB.concat(SIM.cycles.COAL), ca=avgMin(all);
+  $('kCyc').textContent=ca?(ca/60).toFixed(1):'—';
+  const br=trucks.filter(t=>t.state==='breakdown').length;
+  $('kAv').textContent=trucks.length?Math.round((trucks.length-br)/trucks.length*100):100;
+  $('nOb').textContent=trucksOf('OB').length;
+  $('nCo').textContent=trucksOf('COAL').length;
+  // banner
+  const b=$('banner');
+  if(SIM.weather===2){ b.textContent='Operasi dihentikan — hujan deras (slippery)'; b.classList.remove('hidden'); $('opsTxt').textContent='Operasi berhenti — slippery'; }
+  else if(SIM.t<SIM.standbyUntil){ b.textContent='Pergantian shift — P2H & briefing'; b.classList.remove('hidden'); $('opsTxt').textContent='Standby pergantian shift'; }
+  else { b.classList.add('hidden'); $('opsTxt').textContent=SIM.paused?'Simulasi dijeda':'Operasi normal'; }
+  // fleet
+  let fh='';
+  for(const tr of trucks){
+    const low=tr.fuel<25;
+    fh+='<div class="trow"><span class="tid">'+tr.id+'</span>'
+      +'<span class="tag '+(tr.front==='OB'?'ob':'co')+'">'+(tr.front==='OB'?'OB':'COAL')+'</span>'
+      +'<span class="tst'+(tr.state==='breakdown'?' bad':'')+'">'+statusTxt(tr)+'</span>'
+      +'<span class="fbar"><i class="'+(low?'low':'')+'" style="width:'+Math.round(tr.fuel)+'%"></i></span></div>';
+  }
+  $('fleet').innerHTML=fh;
+  // chart
+  if(SIM.chartDirty){
+    SIM.chartDirty=false;
+    const ch=$('chart');
+    if(!SIM.hourly.length){ ch.innerHTML='<div class="empty">Belum ada data jam penuh</div>'; }
+    else{
+      const mo=Math.max(1,...SIM.hourly.map(e=>e.ob));
+      const mc=Math.max(1,...SIM.hourly.map(e=>e.co));
+      ch.innerHTML=SIM.hourly.map(e=>
+        '<div class="col"><div class="bars">'
+        +'<div class="b ob" style="height:'+Math.max(2,Math.round(e.ob/mo*62))+'px" title="OB '+fmt(e.ob)+' bcm"></div>'
+        +'<div class="b co" style="height:'+Math.max(2,Math.round(e.co/mc*62))+'px" title="Coal '+fmt(e.co)+' ton"></div>'
+        +'</div><div class="hl">'+e.h+'</div></div>').join('');
+    }
+  }
+  // log
+  if(SIM.logDirty){
+    SIM.logDirty=false;
+    $('log').innerHTML=(SIM.logEntries||[]).map(e=>
+      '<div class="e '+e.cls+'"><span class="t">'+e.t+'</span><span>'+e.msg+'</span></div>').join('');
+  }
+}
+function syncWxUI(){
+  const names=['Cerah','Gerimis','Hujan deras'];
+  $('wxTxt').textContent=names[SIM.weather];
+  const dot=$('wxChip').querySelector('.dot');
+  dot.style.background=['var(--green)','var(--teal)','var(--red)'][SIM.weather];
+  document.querySelectorAll('#wxSeg button').forEach(b=>{
+    b.classList.toggle('on', SIM.auto? b.dataset.w==='auto' : b.dataset.w===String(SIM.weather));
+  });
+}
+
+/* ================= EVENT ================= */
+$('speedSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  SIM.mult=parseFloat(b.dataset.s);
+  document.querySelectorAll('#speedSeg button').forEach(x=>x.classList.toggle('on',x===b));
+});
+$('wxSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  if(b.dataset.w==='auto'){ SIM.auto=true; addLog('Mode cuaca otomatis aktif.'); syncWxUI(); }
+  else setWeather(parseInt(b.dataset.w,10),false);
+});
+$('pauseBtn').addEventListener('click',()=>{
+  SIM.paused=!SIM.paused;
+  $('pauseBtn').textContent=SIM.paused?'Lanjut':'Jeda';
+});
+$('resetBtn').addEventListener('click',()=>location.reload());
+document.querySelectorAll('.fctl .mini button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    if(b.dataset.d==='1')addTruck(b.dataset.f); else removeTruck(b.dataset.f);
+  });
+});
+if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+  SIM.paused=true; $('pauseBtn').textContent='Mulai';
+}
+
+/* ================= LOOP ================= */
+let last=performance.now();
+function frame(now){
+  const dt=Math.min((now-last)/1000,0.1); last=now;
+  if(!SIM.paused)step(dt*30*SIM.mult);
+  draw(); uiTick(now);
+  requestAnimationFrame(frame);
+}
+syncWxUI();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
