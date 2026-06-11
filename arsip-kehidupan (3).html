@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARSIP KEHIDUPAN — Simulasi Hidup</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Staatliches&family=Special+Elite&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+:root{
+  --desk:#28221a; --paper:#ece5d4; --paper2:#ded5bf; --paper3:#f4efe1;
+  --ink:#22303f; --ink2:#5b6470; --line:#b9b09c;
+  --red:#b23a2c; --green:#3a7a4d; --gold:#a87b1f; --manila:#d6bd84; --manila2:#c2a868;
+  --disp:'Staatliches',sans-serif; --type:'Special Elite',monospace; --ui:'IBM Plex Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--desk);background-image:radial-gradient(circle at 30% 10%,rgba(255,255,255,.04),transparent 60%);color:var(--ink);font:14px/1.5 var(--ui);min-height:100vh;padding:14px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+header{display:flex;align-items:baseline;gap:14px;color:#d8cfb8;flex-wrap:wrap}
+header h1{font:400 30px/1 var(--disp);letter-spacing:.06em;color:#ece5d4}
+header .no{font:400 12px var(--type);color:#9a917c}
+header button{margin-left:auto;font:400 14px var(--disp);letter-spacing:.08em;background:transparent;color:#d8cfb8;border:1px solid #6b6250;border-radius:6px;padding:7px 14px;cursor:pointer}
+header button:hover{color:#fff;border-color:#d8cfb8}
+header button:focus-visible{outline:2px solid #ece5d4}
+main{display:flex;gap:12px;align-items:flex-start}
+/* ===== dokumen utama ===== */
+.doc{flex:1;min-width:0;background:var(--paper);border-radius:6px;position:relative;padding:18px 20px 14px 34px;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.doc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:18px;border-right:1.5px dashed var(--line);
+  background:radial-gradient(circle at 9px 14px, var(--desk) 3.6px, transparent 4.2px);background-size:18px 30px;background-position:0 8px;background-repeat:repeat-y;border-radius:6px 0 0 6px}
+.dochead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-bottom:2px solid var(--ink);padding-bottom:5px;margin-bottom:8px;flex-wrap:wrap}
+.dochead h2{font:400 16px var(--disp);letter-spacing:.14em;color:var(--ink2)}
+.dochead .now{font:400 14px var(--disp);letter-spacing:.12em;color:var(--red)}
+#feed{font:400 13.5px/1.65 var(--type);max-height:42vh;overflow-y:auto;padding-right:6px;scrollbar-width:thin}
+#feed .yr{margin:13px 0 4px;font:400 15px var(--disp);letter-spacing:.12em;color:var(--red);border-bottom:1px dotted var(--line);padding-bottom:2px}
+#feed .e{margin:3px 0;padding-left:14px;text-indent:-14px}
+#feed .e::before{content:'» ';color:var(--ink2)}
+#feed .e.good{color:var(--green)} #feed .e.bad{color:var(--red)}
+#feed .e.sys{color:var(--ink2);font-size:12.5px}
+#feed .e .d{color:var(--ink2);font-size:12px}
+.stamp{display:inline-block;font:400 19px/1 var(--disp);letter-spacing:.16em;color:var(--red);border:3px double var(--red);border-radius:6px;padding:5px 12px;margin:7px 0 4px;transform:rotate(-3deg);opacity:.92;animation:st .35s cubic-bezier(.2,1.6,.4,1)}
+.stamp.green{color:var(--green);border-color:var(--green);transform:rotate(2deg)}
+.stamp.gold{color:var(--gold);border-color:var(--gold);transform:rotate(-1deg)}
+@keyframes st{from{transform:scale(2.1) rotate(-10deg);opacity:0}to{transform:scale(1) rotate(-3deg);opacity:.92}}
+@media (prefers-reduced-motion:reduce){.stamp{animation:none}}
+/* ===== kartu keputusan ===== */
+.kartu{margin-top:12px;background:var(--paper3);border:2px solid var(--red);border-radius:6px;padding:12px 14px;animation:kd .2s ease-out}
+@keyframes kd{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.kartu{animation:none}}
+.kartu .kh{font:400 14px var(--disp);letter-spacing:.16em;color:var(--red);margin-bottom:4px}
+.kartu .kt{font:400 13.5px/1.55 var(--type);margin-bottom:10px}
+.kartu button{display:block;width:100%;text-align:left;background:var(--paper);border:1.5px solid var(--ink);border-radius:5px;padding:9px 12px;margin:6px 0;font:500 13.5px var(--ui);color:var(--ink);cursor:pointer}
+.kartu button:hover{background:#fff;border-color:var(--red)}
+.kartu button:focus-visible{outline:2px solid var(--red);outline-offset:1px}
+.kartu button small{display:block;color:var(--ink2);font-weight:400}
+.kartu button .num{display:inline-block;min-width:18px;font:400 12px var(--type);color:var(--ink2)}
+/* ===== meja aksi (tab folder) ===== */
+.meja{margin-top:14px}
+.tabs{display:flex;gap:3px;flex-wrap:wrap;padding:0 6px}
+.tabs button{font:400 13px var(--disp);letter-spacing:.1em;background:var(--manila2);color:#4a3c1c;border:1px solid #9c854c;border-bottom:none;border-radius:7px 7px 0 0;padding:6px 13px 5px;cursor:pointer;position:relative;top:1px}
+.tabs button:hover{background:var(--manila)}
+.tabs button.on{background:var(--manila);color:#2e2510;padding-top:8px;font-size:13.5px;box-shadow:0 -2px 4px rgba(0,0,0,.08)}
+.tabs button:focus-visible{outline:2px solid var(--ink)}
+.panel{background:var(--manila);border:1px solid #9c854c;border-radius:6px;padding:10px}
+.agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:7px}
+.agrid button{text-align:left;background:var(--paper3);border:1.5px solid #8a7340;border-radius:5px;padding:7px 9px;cursor:pointer;color:var(--ink);min-height:50px}
+.agrid button b{display:block;font:600 12.5px/1.25 var(--ui)}
+.agrid button span{display:block;font:400 11px/1.3 var(--ui);color:var(--ink2);margin-top:2px}
+.agrid button:hover:not(:disabled){border-color:var(--red);background:#fff}
+.agrid button:disabled{opacity:.45;cursor:not-allowed}
+.agrid button.used{opacity:.5;background:var(--paper2)}
+.agrid button.used b::after{content:' ✔';color:var(--green)}
+.agrid button:focus-visible{outline:2px solid var(--ink)}
+.agrid .empty{grid-column:1/-1;font:400 12.5px var(--type);color:#5e4f28;font-style:italic;padding:6px 2px}
+/* ===== bar bawah ===== */
+.bar{display:flex;gap:10px;align-items:center;margin-top:10px;position:sticky;bottom:0;background:linear-gradient(transparent,var(--paper) 35%);padding:10px 0 4px}
+.actInfo{font:400 11.5px var(--type);color:var(--ink2);flex:1;min-width:0}
+#nextBtn{margin-left:auto;font:400 19px var(--disp);letter-spacing:.1em;background:var(--ink);color:var(--paper);border:none;border-radius:6px;padding:10px 24px;cursor:pointer;white-space:nowrap}
+#nextBtn:hover:not(:disabled){background:#34465c}
+#nextBtn:disabled{opacity:.45;cursor:not-allowed}
+#nextBtn:focus-visible{outline:2px solid var(--gold)}
+/* ===== sidebar ===== */
+aside{width:336px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--paper);border-radius:6px;padding:11px 14px;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.card h3{font:400 13.5px var(--disp);letter-spacing:.16em;color:var(--ink2);border-bottom:2px solid var(--ink);padding-bottom:4px;margin-bottom:7px}
+.idrow{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;border-bottom:1px dotted var(--line);padding:3px 0}
+.idrow b{font-weight:600;text-align:right}
+.idrow .lab{color:var(--ink2);flex-shrink:0}
+.uang{font:400 16px var(--type)}
+.uang.neg{color:var(--red)}
+.stat{margin:5px 0}
+.stat .sl{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink2)}
+.sbar{height:9px;background:#cdc4ae;border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.sbar i{display:block;height:100%;background:var(--green);transition:width .3s}
+.sbar i.mid{background:var(--gold)} .sbar i.low{background:var(--red)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font:400 11.5px var(--type);border:1px solid var(--ink);border-radius:99px;padding:2px 9px;background:var(--paper3)}
+.chip.au{border-color:var(--gold);color:var(--gold)}
+.fam{font-size:12.5px}
+.fam .fr{display:flex;justify-content:space-between;gap:6px;border-bottom:1px dotted var(--line);padding:3px 0}
+.fam .dead{color:var(--ink2);text-decoration:line-through}
+.muted{color:var(--ink2);font-size:12px;font-style:italic}
+.subline{font-size:11px;color:var(--ink2)}
+/* ===== overlay & epilog ===== */
+#overlay{position:fixed;inset:0;background:rgba(20,16,10,.78);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
+#overlay.hidden{display:none}
+.epilog{background:var(--paper);border-radius:8px;max-width:580px;width:100%;max-height:90vh;overflow-y:auto;padding:22px 26px;box-shadow:0 16px 50px rgba(0,0,0,.6)}
+.epilog h2{font:400 30px var(--disp);letter-spacing:.1em;color:var(--red);text-align:center}
+.epilog .sub{text-align:center;font:400 13px var(--type);color:var(--ink2);margin-bottom:10px}
+.epilog .jdl{text-align:center;font:400 20px var(--disp);letter-spacing:.08em;color:var(--gold);margin:8px 0}
+.epilog ul{list-style:none;font:400 12.5px/1.7 var(--type);margin:10px 0;border-top:1px dotted var(--line);border-bottom:1px dotted var(--line);padding:8px 0;max-height:30vh;overflow-y:auto}
+.epilog .skor{text-align:center;font:400 16px var(--disp);letter-spacing:.1em;margin:8px 0}
+.epilog .achr{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin:8px 0}
+.epilog button{display:block;margin:14px auto 0;font:400 18px var(--disp);letter-spacing:.1em;background:var(--ink);color:var(--paper);border:none;border-radius:6px;padding:10px 26px;cursor:pointer}
+.epilog button:hover{background:#34465c}
+.epilog .row2{display:flex;gap:10px;justify-content:center}
+.epilog .row2 button{margin:14px 0 0}
+.epilog button.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+@media (max-width:920px){
+  main{flex-direction:column} aside{width:auto}
+  #feed{max-height:34vh}
+  .bar{flex-wrap:wrap} #nextBtn{margin-left:0;width:100%}
+  .tabs{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+  .tabs button{white-space:nowrap}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>ARSIP KEHIDUPAN</h1>
+  <span class="no" id="noArsip">No. Arsip —</span>
+  <button id="restartBtn">Hidup Baru</button>
+</header>
+<main>
+  <section class="doc">
+    <div class="dochead">
+      <h2>Catatan Perjalanan Hidup</h2>
+      <span class="now" id="hdrNow">—</span>
+    </div>
+    <div id="feed" aria-live="polite"></div>
+    <div id="kartu"></div>
+    <div class="meja">
+      <div class="tabs" id="tabs" role="tablist"></div>
+      <div class="panel"><div class="agrid" id="acts"></div></div>
+    </div>
+    <div class="bar">
+      <span class="actInfo" id="actInfo"></span>
+      <button id="nextBtn">Jalani Umur +1 »</button>
+    </div>
+  </section>
+  <aside>
+    <div class="card">
+      <h3>Kartu Identitas</h3>
+      <div class="idrow"><span class="lab">Nama</span><b id="iNama">—</b></div>
+      <div class="idrow"><span class="lab">TTL</span><b id="iTtl">—</b></div>
+      <div class="idrow"><span class="lab">Umur</span><b id="iUmur">—</b></div>
+      <div class="idrow"><span class="lab">Pendidikan</span><b id="iEdu">—</b></div>
+      <div class="idrow"><span class="lab">Status</span><b id="iStatus">—</b></div>
+      <div class="idrow"><span class="lab">Uang tunai</span><b class="uang" id="iUang">Rp 0</b></div>
+      <div class="idrow"><span class="lab">Kekayaan bersih</span><b class="uang" id="iNet">Rp 0</b></div>
+    </div>
+    <div class="card">
+      <h3>Kondisi Diri</h3>
+      <div id="stats"></div>
+    </div>
+    <div class="card">
+      <h3>Pekerjaan &amp; Usaha</h3>
+      <div class="fam" id="kerja"></div>
+    </div>
+    <div class="card">
+      <h3>Keluarga &amp; Asmara</h3>
+      <div class="fam" id="fam"></div>
+      <div id="relbar"></div>
+    </div>
+    <div class="card">
+      <h3>Hobi</h3>
+      <div class="chips" id="hobi"><span class="muted">Belum punya hobi.</span></div>
+    </div>
+    <div class="card">
+      <h3>Portofolio &amp; Aset</h3>
+      <div class="fam" id="porto"></div>
+      <div class="chips" id="aset" style="margin-top:6px"></div>
+    </div>
+    <div class="card">
+      <h3>Pencapaian</h3>
+      <div class="chips" id="ach"><span class="muted">Belum ada.</span></div>
+    </div>
+  </aside>
+</main>
+</div>
+<div id="overlay" class="hidden"><div class="epilog" id="epilog"></div></div>
+
+<script>
+'use strict';
+/* ================= UTIL ================= */
+const r=Math.random, ri=(a,b)=>a+Math.floor(r()*(b-a+1)), pick=a=>a[Math.floor(r()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const hasDoc=typeof document!=='undefined';
+const $=id=>hasDoc?document.getElementById(id):null;
+function rp(n){
+  const neg=n<0; n=Math.abs(n); let s;
+  if(n>=1e9)s=(n/1e9).toFixed(n>=1e10?0:1).replace('.',',')+' M';
+  else if(n>=1e6)s=(n/1e6).toFixed(n>=1e8?0:1).replace('.',',')+' jt';
+  else if(n>=1e3)s=Math.round(n/1e3)+' rb';
+  else s=String(Math.round(n));
+  return (neg?'−Rp ':'Rp ')+s;
+}
+const NAMA_L=['Agus','Budi','Rizky','Fajar','Dimas','Andre','Yoga','Ilham','Bayu','Galih','Reza','Hendra','Doni','Arif','Eko'];
+const NAMA_P=['Sari','Dewi','Putri','Ayu','Rina','Intan','Maya','Citra','Laras','Nadia','Fitri','Wulan','Sinta','Mega','Ratna'];
+const BLK_L=['Pratama','Saputra','Wijaya','Santoso','Ramadhan','Nugroho','Hidayat','Setiawan','Firmansyah','Mahendra'];
+const BLK_P=['Lestari','Utami','Maharani','Anggraini','Permata','Kusuma','Rahmawati','Safitri','Puspita','Andini'];
+const KOTA=['Balikpapan','Samarinda','Banjarmasin','Pontianak','Surabaya','Jakarta','Bandung','Yogyakarta','Makassar','Medan'];
+const NAMA_KUCING=['Oyen','Mochi','Kunyit','Tompel','Belang','Snow','Cimol','Bagas'];
+function namaOrang(g){ return g==='L'? pick(NAMA_L)+' '+pick(BLK_L) : pick(NAMA_P)+' '+pick(BLK_P); }
+
+/* ================= DATA ================= */
+const POOL_UMUM=[['Pegawai minimarket',30e6],['Kurir paket',34e6],['Penjaga toko HP',28e6],['Buruh pelabuhan',38e6],['Admin gudang',36e6],['Driver ojek online',32e6]];
+const POOL_SMK=[['Mekanik bengkel',46e6],['Operator alat berat',72e6],['Teknisi listrik',54e6],['Welder',62e6],['Teknisi AC',48e6]];
+const KARIER={
+  kedokteran:[['Dokter umum klinik',135e6],['Dokter RS daerah',155e6]],
+  teknik:[['Site engineer tambang',115e6],['Engineer pabrik',95e6],['Engineer EPC',105e6]],
+  informatika:[['Programmer startup',105e6],['Data analyst',95e6],['IT support korporat',70e6]],
+  ekonomi:[['Analis bank',90e6],['Akuntan',80e6],['Staf keuangan tambang',92e6]],
+  hukum:[['Pengacara junior',88e6],['Legal officer',76e6]],
+  pendidikan:[['Guru SMA',56e6],['Dosen muda',66e6]],
+  seni:[['Desainer grafis',66e6],['Ilustrator lepas',56e6],['Videografer agensi',62e6]]
+};
+const LV=['','Senior ','Spesialis ','Kepala ','Direktur '];
+const JURUSAN=[
+  {k:'kedokteran',n:'Kedokteran',min:80,lama:6,biaya:60e6},
+  {k:'teknik',n:'Teknik',min:60,lama:4,biaya:25e6},
+  {k:'informatika',n:'Informatika',min:60,lama:4,biaya:25e6},
+  {k:'ekonomi',n:'Ekonomi',min:50,lama:4,biaya:22e6},
+  {k:'hukum',n:'Hukum',min:55,lama:4,biaya:22e6},
+  {k:'pendidikan',n:'Pendidikan',min:45,lama:4,biaya:18e6},
+  {k:'seni',n:'Seni & Desain',min:40,lama:4,biaya:20e6}
+];
+/* usaha: [nama, modal, risk] — risk besar = untung & rugi makin liar */
+const USAHA=[
+  ['Olshop fashion',10e6,1.6],['Catering rumahan',12e6,1.2],['Ternak lele',15e6,1.3],
+  ['Laundry kiloan',18e6,0.9],['Warmindo',20e6,1.1],['Barbershop',22e6,1.0],
+  ['Warung kopi',25e6,1.2],['Ternak ayam',25e6,1.4],['Toko sembako',30e6,0.8],
+  ['Bengkel motor',35e6,1.0],['Startup aplikasi',60e6,2.2],['Ekspedisi lokal',80e6,1.2],
+  ['Kafe kekinian',90e6,1.5],['Rental mobil',150e6,1.1],['Kebun sawit',250e6,0.9],['Kos-kosan',400e6,0.6]
+];
+const HOBI=[
+  {k:'musik',n:'Main musik',mulai:2.5e6,b:1e6,fx:{charm:2,happy:3}},
+  {k:'mancing',n:'Memancing',mulai:1.5e6,b:1e6,fx:{stress:-6,happy:3}},
+  {k:'foto',n:'Fotografi',mulai:8e6,b:2e6,fx:{charm:1,happy:3,smart:1}},
+  {k:'gaming',n:'Gaming',mulai:5e6,b:1e6,fx:{happy:4,stress:-4,health:-1}},
+  {k:'kebun',n:'Berkebun',mulai:1e6,b:0.5e6,fx:{health:2,stress:-5,happy:2}},
+  {k:'masak',n:'Memasak',mulai:1.5e6,b:1e6,fx:{happy:3,charm:1}},
+  {k:'nulis',n:'Menulis',mulai:0.5e6,b:0,fx:{smart:2,happy:2,stress:-2}},
+  {k:'otomotif',n:'Otomotif / modifikasi',mulai:6e6,b:3e6,fx:{happy:3,charm:1}},
+  {k:'badminton',n:'Badminton',mulai:1e6,b:0.5e6,fx:{health:4,happy:2,stress:-3}},
+  {k:'konten',n:'Bikin konten',mulai:3e6,b:1e6,fx:{charm:2,happy:2,stress:1}},
+  {k:'travel',n:'Traveling',mulai:0,b:8e6,fx:{happy:8,stress:-10,charm:1}},
+  {k:'ikan',n:'Ikan hias',mulai:2e6,b:1e6,fx:{happy:3,stress:-4}}
+];
+const SIFAT=[
+  {k:'penyayang',n:'penyayang'},{k:'humoris',n:'humoris'},{k:'suportif',n:'suportif'},
+  {k:'mapan',n:'mapan'},{k:'cuek',n:'agak cuek'},{k:'boros',n:'boros'},{k:'posesif',n:'posesif'}
+];
+const INV=[
+  {k:'depo',n:'Deposito',desc:'Aman, ±4% per tahun'},
+  {k:'emas',n:'Emas',desc:'Stabil, −4% s.d. +14% per tahun'},
+  {k:'saham',n:'Saham',desc:'Naik-turun, −25% s.d. +35%'},
+  {k:'kripto',n:'Kripto',desc:'Liar, −65% s.d. +130%'}
+];
+const SEBAB_TUA=['sakit jantung','komplikasi penyakit','usia tua, wafat dengan tenang dalam tidur','stroke'];
+const ACH_DEF={
+  sarjana:'Sarjana', magister:'Magister', direktur:'Pucuk Karier', miliarder:'Miliarder',
+  sultan:'Sultan', juragan:'Juragan Besar', properti:'Raja Properti', keluarga:'Keluarga Hangat',
+  kakek:'Punya Cucu', sepuh:'Panjang Umur (85+)', bugar:'Tua tapi Bugar', hobiis:'Hobiis Sejati', viral:'Pernah Viral',
+  mabrur:'Haji Mabrur', bos:'Bos Besar (20+ karyawan)', dinasti:'Dinasti 3 Generasi',
+  supel:'Jaringan Luas', teladan:'Orang Tua Teladan'
+};
+
+/* ================= STATE ================= */
+let P=null;
+const G={current:null, queue:[], over:false, feed:[], tab:'diri', acted:0, mkt:{biz:1,label:null}};
+
+function newGame(){
+  const g=r()<0.5?'L':'P';
+  P={
+    nama:namaOrang(g), gender:g, kota:pick(KOTA), lahir:ri(1980,2004),
+    kelas:pick(['miskin','menengah','menengah','kaya']),
+    age:0, alive:true, sebab:null,
+    st:{health:ri(72,95),happy:ri(60,85),smart:ri(35,82),charm:ri(35,82),stress:ri(5,18),relasi:ri(20,50)},
+    money:0, maxNet:0, sumHappy:0,
+    edu:'Belum sekolah', eduLevel:0, track:null, kuliah:null, s2:false, sert:0,
+    job:null, perf:0, retired:false, pensiun:0,
+    biz:[], love:null, kids:[], cucu:0,
+    aset:[], inv:{depo:0,emas:0,saham:0,kripto:0}, tanah:0, kpr:null,
+    hobi:[], pet:null,
+    ortu:{ayahOff:ri(25,33),ibuOff:ri(22,30),ayah:true,ibu:true},
+    rokok:false, pinjol:0, riwayat:[], ach:{}, used:{}, viral:false, bukuTerbit:false,
+    haji:null, hajiDone:false, asuransi:false, gen:1,
+    gaya:'normal', kronis:null, kta:null, dekatAnak:50
+  };
+  G.current=null; G.queue=[]; G.over=false; G.feed=[]; G.tab='diri'; G.acted=0; G.mkt={biz:1,label:null};
+  if(hasDoc){
+    $('feed').innerHTML=''; $('kartu').innerHTML='';
+    $('overlay').classList.add('hidden');
+    $('noArsip').textContent='No. Arsip '+ri(100000,999999)+'/'+P.lahir;
+  }
+  yearHeader();
+  const kelasTxt={miskin:'sederhana — pas-pasan tapi penuh kasih',menengah:'menengah yang cukup',kaya:'berada'}[P.kelas];
+  addLog('Seorang bayi '+(g==='L'?'laki-laki':'perempuan')+' lahir di RSUD '+P.kota+' tahun '+P.lahir+'. Ia diberi nama <b>'+P.nama+'</b>, dari keluarga '+kelasTxt+'.');
+  stamp('LAHIR');
+  milestone('Lahir di '+P.kota);
+  render();
+}
+
+/* ================= LOG ================= */
+function yearHeader(){
+  const t='UMUR '+P.age+' — TAHUN '+(P.lahir+P.age);
+  G.feed.push({yr:t});
+  if(!hasDoc)return;
+  const d=document.createElement('div'); d.className='yr'; d.textContent=t;
+  $('feed').appendChild(d); $('feed').scrollTop=$('feed').scrollHeight;
+}
+function addLog(html,cls){
+  G.feed.push({html,cls});
+  if(!hasDoc)return;
+  const d=document.createElement('div'); d.className='e '+(cls||''); d.innerHTML=html;
+  $('feed').appendChild(d); $('feed').scrollTop=$('feed').scrollHeight;
+}
+function stamp(t,kind){
+  G.feed.push({stamp:t});
+  if(!hasDoc)return;
+  const d=document.createElement('div'); d.className='stamp'+(kind?' '+kind:''); d.textContent=t;
+  $('feed').appendChild(d); $('feed').scrollTop=$('feed').scrollHeight;
+}
+function milestone(t){ P.riwayat.push({age:P.age,t}); }
+function ach(k){
+  if(P.ach[k])return;
+  P.ach[k]=true;
+  addLog('Pencapaian terbuka: <b>'+ACH_DEF[k]+'</b>.','good');
+  stamp('PENCAPAIAN: '+ACH_DEF[k].toUpperCase(),'gold');
+}
+
+/* efek statistik + teks delta */
+const LBL={health:'Kesehatan',happy:'Kebahagiaan',smart:'Kecerdasan',charm:'Karisma',stress:'Stres',relasi:'Relasi'};
+function fx(o){
+  const parts=[];
+  for(const k in o){
+    if(k==='money'){ P.money+=o[k]; parts.push('Uang '+(o[k]>=0?'+':'')+rp(o[k]).replace('Rp ','').replace('−Rp ','−')); }
+    else if(k==='rel'){ if(P.love){P.love.rel=clamp(P.love.rel+o[k],0,100); parts.push('Hubungan '+(o[k]>=0?'+':'')+o[k]);} }
+    else { P.st[k]=clamp(P.st[k]+o[k],0,100); parts.push(LBL[k]+' '+(o[k]>=0?'+':'')+o[k]); }
+  }
+  return ' <span class="d">('+parts.join(', ')+')</span>';
+}
+
+/* ================= KEPUTUSAN ================= */
+function ask(d){
+  d.opts=d.opts.filter(o=>!o.cond||o.cond());
+  if(!d.opts.length)d.opts=[{t:'Lewati',e:()=>{}}];
+  if(G.current)G.queue.push(d); else {G.current=d; renderKartu();}
+}
+function choose(i){
+  if(!G.current||G.over)return;
+  const cur=G.current; G.current=null;
+  if(hasDoc)$('kartu').innerHTML='';
+  (cur.opts[i]||cur.opts[0]).e();
+  if(!G.current && G.queue.length){G.current=G.queue.shift(); renderKartu();}
+  render();
+}
+
+/* ================= EKONOMI ================= */
+function bizValue(b){ return Math.round(b.modal*b.level*0.75*(1+b.hype*0.1)); }
+function netWorth(){
+  let n=P.money+P.inv.depo+P.inv.emas+P.inv.saham+P.inv.kripto+P.tanah;
+  if(P.aset.includes('Rumah'))n+=350e6-(P.kpr?P.kpr.sisa:0);
+  if(P.aset.includes('Mobil'))n+=90e6;
+  if(P.aset.includes('Motor'))n+=12e6;
+  for(const b of P.biz)n+=bizValue(b);
+  return Math.round(n);
+}
+function kidsU18(){ return P.kids.filter(k=>P.age-k.lahirAt<18).length; }
+
+/* ================= TAHUN BERJALAN ================= */
+function advance(){
+  if(G.current||G.over)return;
+  P.age++;
+  P.used={}; G.acted=0;
+  yearHeader();
+  rollMarket();
+  drift();
+  if(P.alive)events();
+  if(P.alive)deathCheck();
+  if(P.alive)checkAch();
+  render();
+}
+
+function rollMarket(){
+  const x=r();
+  if(P.age>=16&&x<0.06){ G.mkt={biz:0.55,label:'krisis'};
+    addLog('KRISIS EKONOMI melanda. Harga naik, pasar lesu, PHK di mana-mana.','bad'); }
+  else if(x<0.16){ G.mkt={biz:1.35,label:'boom'};
+    if(P.age>=18)addLog('Ekonomi sedang booming — daya beli naik, pasar bergairah.','good'); }
+  else G.mkt={biz:1,label:null};
+}
+
+function drift(){
+  const a=P.age, s=P.st;
+  P.sumHappy+=s.happy;
+  /* orang tua menua */
+  for(const who of ['ayah','ibu']){
+    if(!P.ortu[who])continue;
+    const ua=a+P.ortu[who+'Off'];
+    if(ua>62 && r()<0.05+(ua-62)*0.006){
+      P.ortu[who]=false;
+      addLog((who==='ayah'?'Ayah':'Ibu')+' Anda berpulang di usia '+ua+' tahun. Rumah terasa sepi.'+fx({happy:-15,stress:+8}),'bad');
+      milestone((who==='ayah'?'Ayah':'Ibu')+' wafat');
+      if(a>=17){
+        const w=P.kelas==='kaya'?ri(100,400)*1e6:P.kelas==='menengah'?ri(20,80)*1e6:ri(0,10)*1e6;
+        if(w>0)addLog('Anda menerima warisan.'+fx({money:w}));
+      }
+    }
+  }
+  /* drift alami */
+  if(s.stress>70)s.health=clamp(s.health-3,0,100);
+  if(a>45)s.health=clamp(s.health-1,0,100);
+  if(a>65)s.health=clamp(s.health-1,0,100);
+  if(P.rokok)s.health=clamp(s.health-2,0,100);
+  s.happy=clamp(s.happy+(s.happy>50?-1:1),0,100);
+  s.stress=clamp(s.stress-1,0,100);
+  if(a>=18)s.relasi=clamp(s.relasi-1,0,100);
+  if(P.gaya==='mewah'){s.happy=clamp(s.happy+2,0,100);s.charm=clamp(s.charm+1,0,100);}
+  else if(P.gaya==='hemat'&&s.happy>40)s.happy=clamp(s.happy-1,0,100);
+  if(P.kids.length)P.dekatAnak=clamp(P.dekatAnak-(kidsU18()>0?2:1),0,100);
+  /* sifat pasangan */
+  if(P.love){
+    P.love.thn++;
+    const sf=P.love.sifat.k;
+    let dr=(P.love.married?ri(-5,4):ri(-7,5))+(s.happy>65?1:0);
+    if(sf==='penyayang')dr+=2; if(sf==='cuek')dr-=2;
+    if(sf==='humoris')s.happy=clamp(s.happy+1,0,100);
+    if(sf==='posesif')s.stress=clamp(s.stress+2,0,100);
+    if(sf==='suportif')s.stress=clamp(s.stress-1,0,100);
+    P.love.rel=clamp(P.love.rel+dr,0,100);
+  }
+  /* hewan peliharaan */
+  if(P.pet){
+    const up=a-P.pet.lahirAt;
+    if(up>=13&&r()<0.3){
+      addLog('Kucing kesayangan, si '+P.pet.nama+', mati karena usia tua. Rumah kehilangan suara meongnya.'+fx({happy:-8}),'bad');
+      P.pet=null;
+    } else s.happy=clamp(s.happy+2,0,100);
+  }
+  /* antrian haji */
+  if(P.haji){
+    P.haji.sisa--;
+    if(P.haji.sisa<=0){
+      ask({title:'PANGGILAN BERANGKAT HAJI',text:'Nomor porsi Anda akhirnya keluar! Biaya pelunasan '+rp(65e6)+'.',opts:[
+        {t:'Lunasi & berangkat',sub:rp(65e6),cond:()=>P.money>=65e6,e:()=>{
+          P.money-=65e6; P.haji=null; P.hajiDone=true; ach('mabrur');
+          addLog('Anda menunaikan ibadah haji. Pulang dengan gelar '+(P.gender==='L'?'Pak Haji':'Bu Hajjah')+' dan hati yang penuh.'+fx({happy:+15,stress:-12}),'good');
+          stamp('HAJI','green'); milestone('Naik haji');}},
+        {t:'Tunda tahun depan',e:()=>{P.haji.sisa=1;addLog('Keberangkatan ditunda setahun — tabungan pelunasan belum siap.'+fx({stress:+3}));}}
+      ]});
+    }
+  }
+  /* sakit & asuransi */
+  if(a>=18&&s.health<45&&r()<0.35){
+    const biaya=ri(10,30)*1e6;
+    const tang=P.asuransi?Math.round(biaya*0.8):0;
+    addLog('Kondisi badan drop — Anda sempat dirawat. Tagihan '+rp(biaya)+(P.asuransi?', '+rp(tang)+' ditanggung asuransi.':' ditanggung sendiri.')+fx({money:-(biaya-tang),health:+6,stress:+4}),'bad');
+  }
+  /* penyakit kronis */
+  if(!P.kronis&&a>=35&&r()<(0.01+(P.rokok?0.03:0)+(s.health<50?0.02:0)+(a>55?0.02:0))){
+    P.kronis={n:pick(['hipertensi','diabetes','kolesterol tinggi','asam urat']),kontrol:false};
+    addLog('Hasil lab tahunan tidak bagus: Anda divonis <b>'+P.kronis.n+'</b>. Dokter menyarankan kontrol rutin seumur hidup.'+fx({stress:+6,happy:-4}),'bad');
+    milestone('Divonis '+P.kronis.n);
+  }
+  if(P.kronis){
+    if(P.kronis.kontrol){
+      const ob=P.asuransi?1.5e6:5e6;
+      addLog('Kontrol rutin '+P.kronis.n+' berjalan tertib. Obat '+rp(ob)+'/thn'+(P.asuransi?' (ditekan asuransi).':'.')+fx({money:-ob,health:-1}));
+    } else {
+      s.health=clamp(s.health-4,0,100); s.stress=clamp(s.stress+2,0,100);
+      if(r()<0.15){
+        const u=ri(15,40)*1e6, byr=P.asuransi?Math.round(u*0.2):u;
+        addLog(P.kronis.n.charAt(0).toUpperCase()+P.kronis.n.slice(1)+' yang diabaikan kambuh parah — Anda masuk IGD. Tagihan '+rp(byr)+'.'+fx({money:-byr,health:-6,stress:+6}),'bad');
+      }
+    }
+  }
+  /* keuangan (mulai 18) */
+  if(a>=18){
+    let masuk=0, keluar=0;
+    if(P.job){ P.job.g=Math.round(P.job.g*1.03); masuk+=P.job.g; }
+    if(P.retired&&P.pensiun)masuk+=P.pensiun;
+    if(P.love&&P.love.married&&P.love.income)masuk+=P.love.income;
+    if(P.love&&P.love.married&&P.love.sifat.k==='boros')keluar+=3e6;
+    /* usaha */
+    for(const b of P.biz.slice()){
+      const base=b.modal*b.level*(0.5+(s.smart+s.charm)/400)*(1+0.10*b.kary/(1+0.02*b.kary))*(1+0.2*b.hype)*(1+s.relasi/500)*G.mkt.biz;
+      const rate=r()*(1.2+b.risk)-(0.35+b.risk*0.3);
+      const profit=Math.round(base*rate);
+      keluar+=20e6*b.kary;
+      if(profit>=0){ masuk+=profit; addLog('Usaha '+b.nama+' untung '+rp(profit)+' tahun ini.','good'); }
+      else { keluar+=-profit; addLog('Usaha '+b.nama+' rugi '+rp(-profit)+'. Tahun yang berat.','bad'); }
+      if(b.hype>0)b.hype--;
+      if(b.kary>0)s.stress=clamp(s.stress-1,0,100);
+    }
+    /* investasi */
+    let dInv=0;
+    if(P.inv.depo>0){ const d=Math.round(P.inv.depo*0.04); P.inv.depo+=d; dInv+=d; }
+    if(P.inv.emas>0){ const pct=ri(-4,14)+(G.mkt.label==='boom'?2:G.mkt.label==='krisis'?-5:0);
+      const d=Math.round(P.inv.emas*pct/100); P.inv.emas+=d; dInv+=d; }
+    if(P.inv.saham>0){ const pct=G.mkt.label==='krisis'?ri(-45,-10):G.mkt.label==='boom'?ri(5,55):ri(-25,35);
+      const d=Math.round(P.inv.saham*pct/100); P.inv.saham+=d; dInv+=d; }
+    if(P.inv.kripto>0){ const pct=G.mkt.label==='krisis'?ri(-75,-20):ri(-65,130);
+      const d=Math.round(P.inv.kripto*pct/100); P.inv.kripto+=d; dInv+=d; }
+    if(Math.abs(dInv)>=5e6)
+      addLog('Portofolio investasi Anda '+(dInv>=0?'tumbuh ':'menyusut ')+rp(Math.abs(dInv))+' tahun ini.',dInv>=0?'good':'bad');
+    if(P.tanah>0)P.tanah=Math.round(P.tanah*1.08);
+    /* biaya hidup */
+    const kuliahOrtu=P.kuliah&&!P.kuliah.beasiswa&&P.kelas!=='miskin';
+    let hidup;
+    if(P.kuliah)hidup=kuliahOrtu?4e6:10e6;
+    else if(a>=23||(P.love&&P.love.married))hidup=P.aset.includes('Rumah')?14e6:24e6;
+    else hidup=8e6;
+    hidup=Math.round(hidup*(P.gaya==='hemat'?0.7:P.gaya==='mewah'?1.8:1));
+    if(G.mkt.label==='krisis')hidup=Math.round(hidup*1.25);
+    keluar+=hidup+12e6*kidsU18();
+    if(P.asuransi)keluar+=6e6;
+    if(P.pet)keluar+=1.5e6;
+    if(P.kuliah&&P.kuliah.beasiswa===false&&P.kelas==='miskin')keluar+=P.kuliah.biaya;
+    if(P.kpr){
+      keluar+=P.kpr.cicilan; P.kpr.sisa=Math.max(0,P.kpr.sisa-P.kpr.cicilan); P.kpr.thn--;
+      if(P.kpr.thn<=0||P.kpr.sisa<=0){
+        P.kpr=null; addLog('Cicilan KPR LUNAS. Rumah resmi 100% milik Anda.','good'); stamp('KPR LUNAS','green'); milestone('KPR lunas');
+      }
+    }
+    if(P.kta){
+      keluar+=P.kta.cicilan; P.kta.sisa=Math.max(0,P.kta.sisa-P.kta.cicilan); P.kta.thn--;
+      if(P.kta.thn<=0||P.kta.sisa<=0){ P.kta=null; addLog('Cicilan terakhir terbayar — KTA bank lunas.','good'); }
+    }
+    if(P.pinjol>0){ keluar+=6e6; P.pinjol--; s.stress=clamp(s.stress+6,0,100);
+      addLog('Tagihan pinjol menyedot '+rp(6e6)+'. DC meneror nomor Anda.','bad'); }
+    P.money+=masuk-keluar;
+    addLog('Arus kas: pemasukan '+rp(masuk)+', pengeluaran '+rp(keluar)+'.','sys');
+    if(P.money<0){ s.stress=clamp(s.stress+6,0,100);
+      if(r()<0.5)addLog('Keuangan minus. Anda makan mi instan lebih sering dari yang sehat.','bad'); }
+  }
+  const nw=netWorth(); if(nw>P.maxNet)P.maxNet=nw;
+}
+
+/* ================= KARIER ================= */
+function salaryAdj(g){ return Math.round(g*(1+0.06*P.sert)*(P.s2?1.2:1)); }
+function setJob(t,g){
+  P.job={title:t,g,level:0}; P.perf=0;
+  addLog('Anda mulai bekerja sebagai <b>'+t+'</b>, gaji '+rp(Math.round(g/12))+'/bulan.','good');
+  milestone('Mulai kerja: '+t);
+}
+function buildPool(){
+  let pool=P.eduLevel>=4?KARIER[P.jur||'ekonomi'].concat([['Staf admin kantor',48e6]]):(P.track==='smk'?POOL_SMK:POOL_UMUM);
+  return pool;
+}
+function jobOffers(pool,n,mult){
+  mult=mult||1;
+  const list=pool.slice().sort(()=>r()-0.5).slice(0,n);
+  ask({title:'PANGGILAN KERJA',text:'Beberapa lamaran Anda berbuah. Pilih satu:',
+    opts:list.map(j=>{const g=Math.round(salaryAdj(j[1])*mult);
+      return {t:j[0],sub:'Gaji '+rp(Math.round(g/12))+'/bulan',e:()=>setJob(j[0],g)};})
+      .concat([{t:'Tolak semua, cari yang lebih baik',e:()=>addLog('Anda menolak semua tawaran. Semoga keputusan tepat.'+fx({stress:+4}))}])});
+}
+
+/* ================= USAHA ================= */
+function bukaUsahaCard(){
+  const bantu=(P.biz.length===0&&P.age<=27)?(P.kelas==='kaya'?60e6:P.kelas==='menengah'?20e6:8e6):0;
+  ask({title:'BUKA USAHA',text:bantu>0?'Untuk usaha pertama, orang tua siap bantu modal '+rp(bantu)+'. Mau buka apa?':'Pilih bidang usaha (modal sendiri):',
+    opts:USAHA.map(u=>({t:u[0],sub:'Modal '+rp(u[1])+(u[2]>=1.5?' · risiko tinggi':u[2]<=0.9?' · stabil':''),
+      cond:()=>P.money+bantu>=u[1],
+      e:()=>{
+        P.money+=Math.min(bantu,u[1]); P.money-=u[1];
+        P.biz.push({nama:u[0],modal:u[1],risk:u[2],level:1,kary:0,hype:0});
+        addLog('Anda membuka <b>'+u[0]+'</b> dengan modal '+rp(u[1])+'. Selamat berjuang, juragan.','good');
+        milestone('Buka usaha: '+u[0]);
+      }})).concat([{t:'Batal',e:()=>{}}])});
+}
+function pickBiz(judul,cb){
+  if(P.biz.length===1)return cb(P.biz[0]);
+  ask({title:judul,text:'Pilih usaha yang dimaksud:',
+    opts:P.biz.map(b=>({t:b.nama,sub:'Level '+b.level+' · '+b.kary+' karyawan',e:()=>cb(b)}))
+      .concat([{t:'Batal',e:()=>{}}])});
+}
+
+/* ================= ASMARA ================= */
+function newCandidate(){
+  return {nama:namaOrang(P.gender==='L'?'P':'L'), sifat:pick(SIFAT), rel:ri(50,68), thn:0, married:false, income:0};
+}
+function jadian(c,via){
+  P.love=c;
+  addLog('Gayung bersambut — Anda dan <b>'+c.nama.split(' ')[0]+'</b> resmi berpacaran'+(via?' setelah kenalan '+via:'')+'. Orangnya '+c.sifat.n+'.'+fx({happy:+10}),'good');
+  milestone('Pacaran dengan '+c.nama.split(' ')[0]);
+}
+function nikah(biaya,happyPlus,charmPlus){
+  P.money-=biaya; P.love.married=true; P.love.rel=clamp(P.love.rel+15,0,100);
+  let inc=r()<0.7?ri(30,80)*1e6:0;
+  if(P.love.sifat.k==='mapan')inc=Math.round(Math.max(inc,40e6)*1.6);
+  P.love.income=inc;
+  addLog('Anda menikah dengan <b>'+P.love.nama+'</b>! Seluruh kampung datang.'+fx({happy:happyPlus,stress:-5,charm:charmPlus||0}),'good');
+  stamp('MENIKAH'); milestone('Menikah dengan '+P.love.nama);
+  if(inc)addLog('Pasangan Anda juga bekerja — penghasilan keluarga bertambah '+rp(Math.round(inc/12))+'/bulan.','good');
+}
+function cerai(){
+  addLog('Anda dan '+P.love.nama+' resmi bercerai. Harta dibagi dua.'+fx({happy:-20,stress:+15}),'bad');
+  P.money=Math.round(P.money/2); milestone('Bercerai'); P.love=null;
+}
+function lahirAnak(){
+  const jk=r()<0.5?'L':'P';
+  const anak={nama:(jk==='L'?pick(NAMA_L):pick(NAMA_P)),lahirAt:P.age,jk,nikah:false,anak:false};
+  P.kids.push(anak);
+  addLog('Anak '+(jk==='L'?'laki-laki':'perempuan')+' lahir! Anda menamainya <b>'+anak.nama+'</b>.'+fx({happy:+12,stress:+5,money:-8e6}),'good');
+  stamp('ANAK LAHIR','green'); milestone('Anak lahir: '+anak.nama);
+}
+
+/* ================= HOBI ================= */
+function hobiPerk(h){
+  const lv=h.level;
+  if(lv<3||r()>0.4)return;
+  const F={
+    musik:()=>addLog('Band Anda manggung di kafe — dapat honor.'+fx({money:ri(2,8)*1e6,happy:+4}),'good'),
+    mancing:()=>addLog('Anda juara lomba mancing antarkampung!'+fx({money:ri(1,5)*1e6,happy:+4}),'good'),
+    foto:()=>addLog('Anda dapat job foto wedding. Hasilnya lumayan.'+fx({money:ri(4,15)*1e6,happy:+3}),'good'),
+    gaming:()=>{ if(r()<0.5)addLog('Anda menang turnamen e-sports lokal!'+fx({money:ri(2,20)*1e6,happy:+5}),'good'); },
+    kebun:()=>addLog('Panen melimpah — hasil kebun laku dijual.'+fx({money:ri(1,4)*1e6,health:+2}),'good'),
+    masak:()=>addLog('Open PO masakan Anda ramai pesanan.'+fx({money:ri(2,8)*1e6,happy:+3}),'good'),
+    nulis:()=>{ if(lv>=4&&!P.bukuTerbit&&r()<0.5){ P.bukuTerbit=true;
+        addLog('Naskah Anda diterima penerbit — BUKU PERTAMA TERBIT! Royalti mengalir.'+fx({money:ri(5,30)*1e6,happy:+10}),'good');
+        milestone('Menerbitkan buku'); } else addLog('Tulisan Anda dimuat media — dapat honor kecil.'+fx({money:ri(1,3)*1e6}),'good'); },
+    otomotif:()=>addLog('Motor modifikasi Anda menang kontes!'+fx({money:ri(3,12)*1e6,charm:+3}),'good'),
+    badminton:()=>addLog('Anda juara turnamen badminton kompleks.'+fx({money:ri(1,6)*1e6,health:+2,happy:+3}),'good'),
+    konten:()=>{ if(r()<0.12){ P.viral=true;
+        addLog('Konten Anda VIRAL nasional! Endorse berdatangan.'+fx({money:ri(30,150)*1e6,charm:+8,happy:+8}),'good');
+        stamp('VIRAL','gold'); milestone('Viral di media sosial'); }
+      else addLog('Penghasilan adsense dan endorse kecil masuk rekening.'+fx({money:ri(3,25)*1e6}),'good'); },
+    travel:()=>addLog('Cerita perjalanan Anda jadi bahan obrolan ke mana-mana.'+fx({charm:+2})),
+    ikan:()=>addLog('Burayak ikan hias Anda laku keras di komunitas.'+fx({money:ri(1,5)*1e6}),'good')
+  };
+  if(F[h.k])F[h.k]();
+}
+function tekuni(k){
+  const h=P.hobi.find(x=>x.k===k); if(!h)return;
+  const def=HOBI.find(x=>x.k===k);
+  if(def.b>0){ if(P.money<def.b)return addLog('Tabungan tidak cukup untuk menekuni '+def.n+' tahun ini.','bad'); P.money-=def.b; }
+  h.xp+=ri(30,55);
+  const nl=1+Math.floor(h.xp/100);
+  addLog('Anda menekuni hobi '+def.n+'.'+fx(def.fx));
+  if(nl>h.level){ h.level=nl; addLog('Kemampuan '+def.n+' Anda naik ke <b>level '+nl+'</b>.','good'); }
+  hobiPerk(h);
+}
+
+/* ================= MATI & EPILOG ================= */
+function die(sebab){
+  P.alive=false; P.sebab=sebab; G.current=null; G.queue=[]; G.over=true;
+  addLog('<b>'+P.nama+' menghembuskan napas terakhir di usia '+P.age+' tahun.</b> Penyebab: '+sebab+'.','bad');
+  stamp('WAFAT');
+  showEpilog();
+}
+function deathCheck(){
+  let p=0; const a=P.age,h=P.st.health;
+  if(h<=5)p+=0.6; else if(h<20)p+=0.12; else if(h<35)p+=0.03;
+  if(a>55)p+=(a-55)*0.006;
+  if(P.rokok)p+=a>40?0.02:0.004;
+  if(a>90)p+=0.18;
+  if(r()<p)die(h<35?'sakit yang sudah lama digerogoti':pick(SEBAB_TUA));
+}
+function checkAch(){
+  if(P.eduLevel>=4)ach('sarjana');
+  if(P.s2)ach('magister');
+  if(P.job&&P.job.level>=4)ach('direktur');
+  const nw=netWorth();
+  if(nw>=1e9)ach('miliarder');
+  if(nw>=5e9)ach('sultan');
+  if(P.biz.reduce((s,b)=>s+b.level,0)>=5)ach('juragan');
+  if(P.aset.includes('Rumah')&&P.tanah>0)ach('properti');
+  if(P.love&&P.love.married&&P.kids.length>=2)ach('keluarga');
+  if(P.cucu>0)ach('kakek');
+  if(P.age>=85)ach('sepuh');
+  if(P.age>=70&&P.st.health>=65)ach('bugar');
+  if(P.hobi.some(h=>h.level>=5))ach('hobiis');
+  if(P.viral)ach('viral');
+  if(P.biz.reduce((s,b)=>s+b.kary,0)>=20)ach('bos');
+  if(P.gen>=3)ach('dinasti');
+  if(P.st.relasi>=90)ach('supel');
+  if(P.kids.length>=1&&P.dekatAnak>=85)ach('teladan');
+}
+function showEpilog(){
+  const avgH=Math.round(P.sumHappy/Math.max(P.age,1));
+  const nAch=Object.keys(P.ach).length;
+  const lvl=P.job?P.job.level:(P.riwayat.some(x=>x.t.startsWith('Promosi'))?2:0);
+  const hobLv=P.hobi.reduce((s,h)=>s+h.level,0);
+  const skor=Math.round(P.eduLevel*8+lvl*10+(P.riwayat.some(x=>x.t.startsWith('Menikah'))?15:0)
+    +P.kids.length*8+P.aset.length*8+clamp(P.maxNet/8e7,0,30)+avgH/4+P.age/2+nAch*4+hobLv*2);
+  const grade=skor>=130?'S — Hidup Legendaris':skor>=100?'A — Hidup yang Penuh':skor>=70?'B — Hidup yang Layak':skor>=45?'C — Hidup yang Berjuang':'D — Hidup yang Berat';
+  let julukan='Orang Baik-Baik';
+  if(P.maxNet>=5e9)julukan='Sultan '+P.kota;
+  else if(P.maxNet>=1e9)julukan='Miliarder Kampung';
+  else if(P.biz.some(b=>b.level>=3))julukan='Juragan '+P.biz.find(b=>b.level>=3).nama;
+  else if(P.hajiDone)julukan=P.gender==='L'?'Pak Haji':'Bu Hajjah';
+  else if(P.viral)julukan='Seleb Medsos';
+  else if(P.bukuTerbit)julukan='Sang Penulis';
+  else if(P.st.smart>=85)julukan='Sang Cendekia';
+  else if(P.kids.length>=3)julukan='Kepala Keluarga Sejati';
+  else if(P.hobi.some(h=>h.level>=5))julukan='Maestro '+HOBI.find(x=>x.k===P.hobi.find(h=>h.level>=5).k).n;
+  else if(P.dekatAnak>=85&&P.kids.length)julukan='Orang Tua Teladan';
+  else if(P.st.relasi>=90)julukan='Orang Paling Dikenal';
+  else if(P.st.charm>=85)julukan='Idola Kampung';
+  else if(avgH>=70)julukan='Jiwa yang Bahagia';
+  const rw=P.riwayat.map(x=>'<li>Umur '+x.age+' — '+x.t+'</li>').join('');
+  const achs=Object.keys(P.ach).map(k=>'<span class="chip au">'+ACH_DEF[k]+'</span>').join('')||'<span class="muted">—</span>';
+  if(!hasDoc)return;
+  $('epilog').innerHTML=
+    '<h2>IN MEMORIAM</h2>'+
+    '<div class="sub">'+P.nama+' · '+P.lahir+'–'+(P.lahir+P.age)+' · '+P.kota+'<br>Wafat usia '+P.age+' tahun, '+P.sebab+'</div>'+
+    '<div class="jdl">"'+julukan+'"</div>'+
+    '<div class="achr">'+achs+'</div>'+
+    '<ul>'+rw+'</ul>'+
+    '<div class="skor">SKOR HIDUP: '+skor+'<br>'+grade+'</div>'+
+    '<div class="sub">'+(P.gen>1?'Generasi ke-'+P.gen+' · ':'')+'Kekayaan puncak '+rp(P.maxNet)+' · Rata-rata kebahagiaan '+avgH+'/100 · '+P.kids.length+' anak · '+P.cucu+' cucu</div>'+
+    (P.kids.length?'<button data-go="anak">Lanjut sebagai '+P.kids[0].nama+' (Generasi '+(P.gen+1)+') »</button>':'')+
+    '<button data-go="new"'+(P.kids.length?' class="ghost"':'')+'>Jalani Hidup Baru »</button>';
+  $('overlay').classList.remove('hidden');
+}
+function contAsChild(){
+  const k=P.kids[0];
+  const gen=P.gen+1;
+  const warisan=Math.max(0,Math.round(netWorth()*0.5/P.kids.length));
+  const marga=P.nama.split(' ')[1]||'';
+  const info={nama:(k.nama+' '+marga).trim(), g:k.jk, kota:P.kota, lahir:P.lahir+k.lahirAt,
+    umur:P.age-k.lahirAt, kuliah:!!k.kuliah, ortuG:P.gender, ortuNama:P.nama,
+    pasanganAda:!!(P.love&&P.love.married), lahirAt:k.lahirAt};
+  newGame();
+  P.nama=info.nama; P.gender=info.g; P.kota=info.kota; P.lahir=info.lahir; P.gen=gen;
+  P.age=clamp(Math.max(info.umur,18),18,35);
+  if(info.kuliah){const j=pick(JURUSAN);P.eduLevel=4;P.jur=j.k;P.edu='S1 '+j.n;}
+  else{P.eduLevel=3;P.track=pick(['ipa','ips','smk']);P.edu='Lulus '+(P.track==='smk'?'SMK':'SMA');}
+  P.money=warisan;
+  P.kelas=warisan>=500e6?'kaya':warisan>=50e6?'menengah':'miskin';
+  P.st.smart=clamp(P.st.smart+5,0,100); P.st.charm=clamp(P.st.charm+5,0,100);
+  P.ortu.ayahOff=info.lahirAt; P.ortu.ibuOff=info.lahirAt;
+  if(info.ortuG==='L'){P.ortu.ayah=false;P.ortu.ibu=info.pasanganAda;}
+  else{P.ortu.ibu=false;P.ortu.ayah=info.pasanganAda;}
+  P.riwayat=[{age:0,t:'Lahir di '+P.kota+', anak dari '+info.ortuNama}];
+  G.feed=[];
+  if(hasDoc){$('feed').innerHTML='';$('noArsip').textContent='No. Arsip '+ri(100000,999999)+'/'+P.lahir;}
+  yearHeader();
+  addLog('<b>GENERASI KE-'+gen+'.</b> Arsip berlanjut ke <b>'+P.nama+'</b>, kini '+P.age+' tahun. Warisan yang diterima: '+rp(warisan)+'.');
+  stamp('GENERASI '+gen,'green'); milestone('Mewarisi '+rp(warisan)+' (Generasi '+gen+')');
+  if(P.gen>=3)ach('dinasti');
+  render();
+}
+
+/* ================= EVENT TAHUNAN (otomatis) ================= */
+function events(){
+  const a=P.age;
+  /* ---- RELASI & PERTEMANAN ---- */
+  if(a>=20&&P.st.relasi>=60&&r()<0.08){
+    const u=ri(5,30)*1e6;
+    addLog('Seorang kenalan lama mengajak Anda ikut proyek sampingan. Hasilnya lumayan.'+fx({money:u,relasi:+3}),'good');
+  } else if(a>=20&&P.st.relasi>=35&&r()<0.06){
+    const u=ri(5,15)*1e6;
+    ask({title:'TEMAN PINJAM UANG',text:'Teman lama tiba-tiba menghubungi: butuh pinjaman '+rp(u)+' untuk keperluan mendesak.',opts:[
+      {t:'Pinjamkan',cond:()=>P.money>=u,e:()=>{
+        if(r()<0.6)addLog('Anda meminjamkan '+rp(u)+'. Setahun kemudian dikembalikan utuh, plus rasa hormat.'+fx({relasi:+6,happy:+3}),'good');
+        else addLog('Anda meminjamkan '+rp(u)+'... lalu nomor teman itu mendadak tidak aktif.'+fx({money:-u,relasi:-4,stress:+5}),'bad');}},
+      {t:'Tolak halus',e:()=>addLog('Anda menolak dengan alasan kondisi. Hubungan sedikit merenggang.'+fx({relasi:-5}))}
+    ]});
+  }
+  /* ---- MASA TUA & ANAK ---- */
+  if(a>=66&&P.kids.length){
+    if(P.dekatAnak>=60&&r()<0.45)
+      addLog('Anak-anak datang berkunjung membawa cucu dan masakan kesukaan Anda. Rumah ramai lagi.'+fx({happy:+6,health:+2}),'good');
+    else if(P.dekatAnak<35&&r()<0.3)
+      addLog('Hari raya lewat lagi tanpa kabar dari anak-anak. Rumah terasa terlalu besar.'+fx({happy:-6,stress:+3}),'bad');
+  }
+  /* ---- PENDIDIKAN ---- */
+  if(a===6){
+    P.edu='SD'; stamp('MASUK SD','green'); milestone('Masuk SD');
+    addLog('Hari pertama sekolah. Seragam merah putih masih kebesaran.');
+    ask({title:'POLA BELAJAR',text:'Orang tua bertanya: mau jadi anak yang bagaimana di sekolah?',opts:[
+      {t:'Rajin belajar, kejar ranking',e:()=>addLog('Anda tekun mengerjakan PR tiap malam.'+fx({smart:+8,happy:-2}))},
+      {t:'Yang penting banyak teman',e:()=>addLog('Anda jadi anak paling ramai di kelas.'+fx({charm:+8,smart:-2}))},
+      {t:'Seimbang saja',e:()=>addLog('Belajar iya, main iya.'+fx({smart:+4,charm:+4}))}
+    ]});
+  }
+  if(a===12){
+    P.eduLevel=1; P.edu='SMP'; addLog('Anda lulus SD dan masuk SMP. Masa puber dimulai.','good'); milestone('Lulus SD');
+    ask({title:'JATI DIRI REMAJA',text:'Di SMP, semua orang mencari identitas. Anda tipe yang mana?',opts:[
+      {t:'Kutu buku',e:()=>addLog('Perpustakaan jadi rumah kedua.'+fx({smart:+8,charm:-3}))},
+      {t:'Anak gaul',e:()=>addLog('Anda kenal semua angkatan, dari kelas 7 sampai 9.'+fx({charm:+8,smart:-3}))},
+      {t:'Anak rumahan',e:()=>addLog('Pulang sekolah langsung pulang. Aman dan tenteram.'+fx({happy:+4,health:+3,charm:-2}))}
+    ]});
+  }
+  if(a===14){
+    ask({title:'AJAKAN BERBAHAYA',text:'Teman sebangku mengajak bolos dan mencoba rokok di belakang sekolah.',opts:[
+      {t:'Ikut, biar dianggap berani',e:()=>{P.rokok=true;
+        addLog('Anda mulai merokok diam-diam. Kantong dan paru-paru sama-sama protes.'+fx({charm:+5,health:-6,stress:-3}),'bad');
+        if(r()<0.4)addLog('Ketahuan orang tua. Diceramahi tiga jam nonstop.'+fx({happy:-6,stress:+6}),'bad');}},
+      {t:'Tolak halus',e:()=>addLog('Anda menolak. Sedikit diejek, tapi dompet dan paru-paru selamat.'+fx({smart:+3,charm:-2}))}
+    ]});
+  }
+  if(a===15){
+    P.eduLevel=2; addLog('Lulus SMP. Saatnya memilih sekolah lanjutan.','good'); milestone('Lulus SMP');
+    ask({title:'SEKOLAH LANJUTAN',text:'Pilihan ini menentukan arah hidup Anda:',opts:[
+      {t:'SMA jurusan IPA',sub:'Butuh otak encer',cond:()=>P.st.smart>=55,e:()=>{P.track='ipa';P.edu='SMA IPA';
+        addLog('Anda masuk IPA. Fisika dan kimia siap menghantui.'+fx({smart:+6,stress:+4}));}},
+      {t:'SMA jurusan IPS',e:()=>{P.track='ips';P.edu='SMA IPS';
+        addLog('Anda masuk IPS. Hafalan banyak, tapi diskusinya seru.'+fx({charm:+4,smart:+2}));}},
+      {t:'SMK — siap kerja',e:()=>{P.track='smk';P.edu='SMK';
+        addLog('Anda masuk SMK. Praktik bengkel dan magang menanti.'+fx({smart:+3,health:+2}));}}
+    ]});
+  }
+  if(a===17&&P.st.charm>=55&&r()<0.7){
+    const calon=namaOrang(P.gender==='L'?'P':'L').split(' ')[0];
+    ask({title:'CINTA MONYET',text:calon+', teman sekelas, sepertinya juga memperhatikan Anda. Nembak nggak?',opts:[
+      {t:'Nembak setelah pulang sekolah',e:()=>{ if(r()<P.st.charm/110){
+          addLog(calon+' menerima! Dunia mendadak berwarna pink.'+fx({happy:+10,smart:-2}),'good');
+          if(r()<0.7)addLog('Setahun kemudian kandas karena LDR kelulusan. Namanya juga cinta monyet.'+fx({happy:-5}));
+        } else addLog('Ditolak dengan kata legendaris: "kita temenan aja ya."'+fx({happy:-8,charm:+3,stress:+4}),'bad');}},
+      {t:'Fokus belajar dulu',e:()=>addLog('Anda memendam rasa demi masa depan.'+fx({smart:+4,happy:-2}))}
+    ]});
+  }
+  if(a===18){
+    P.eduLevel=3; P.edu='Lulus '+(P.track==='smk'?'SMK':'SMA');
+    stamp('LULUS SMA/SMK'); milestone('Lulus '+(P.track==='smk'?'SMK':'SMA'));
+    addLog('Toga abu-abu dilempar ke udara. Sekarang: dunia nyata. Meja Aksi terbuka penuh — atur hidup Anda dari sana.');
+    const bisaKuliah=P.kelas!=='miskin'||P.st.smart>=78;
+    ask({title:'PERSIMPANGAN BESAR',text:'Inilah keputusan terbesar pertama dalam hidup Anda:',opts:[
+      {t:'Kuliah',sub:bisaKuliah?'Orang tua sanggup / ada jalur beasiswa':'',cond:()=>bisaKuliah,e:()=>pilihJurusan()},
+      {t:'Langsung kerja',e:()=>jobOffers(P.track==='smk'?POOL_SMK:POOL_UMUM,3)},
+      {t:'Buka usaha',e:()=>bukaUsahaCard()},
+      {t:'Gap year — istirahat dulu',e:()=>addLog('Anda rebahan setahun "mencari jati diri". Orang tua mulai menyindir.'+fx({happy:+6,stress:-6}))}
+    ]});
+  }
+  function pilihJurusan(){
+    const beasiswa=P.st.smart>=78;
+    ask({title:'PILIH JURUSAN',text:beasiswa?'Nilai Anda tinggi — beasiswa penuh tersedia untuk semua jurusan!':'Pilih sesuai kemampuan otak dan dompet keluarga:',
+      opts:JURUSAN.map(j=>({t:j.n,sub:'Min. kecerdasan '+j.min+' · '+j.lama+' tahun · '+rp(j.biaya)+'/thn'+(beasiswa?' (GRATIS — beasiswa)':''),
+        cond:()=>P.st.smart>=j.min&&(beasiswa||P.kelas==='kaya'||(P.kelas==='menengah'&&j.k!=='kedokteran')),
+        e:()=>{
+          P.kuliah={jur:j.k,n:j.n,mulai:18,lama:j.lama,biaya:j.biaya,beasiswa};
+          P.edu='Mahasiswa '+j.n;
+          addLog('Anda diterima di jurusan <b>'+j.n+'</b>'+(beasiswa?' dengan beasiswa penuh. Orang tua menangis bangga.':'.'),'good');
+          milestone('Kuliah '+j.n+(beasiswa?' (beasiswa)':''));
+        }}))});
+  }
+  if(P.kuliah&&a===P.kuliah.mulai+2){
+    ask({title:'MASA KULIAH',text:'Semester pertengahan. Mau diisi apa waktu luang Anda?',opts:[
+      {t:'Aktif organisasi kampus',e:()=>{P.kuliah.org=true;addLog('Anda jadi pengurus BEM. Rapat sampai malam, relasi di mana-mana.'+fx({charm:+8,stress:+5}));}},
+      {t:'Magang & cari pengalaman',e:()=>{P.kuliah.rajin=true;addLog('CV Anda mulai terisi. Dosen pun kenal nama Anda.'+fx({smart:+6,money:+6e6}));}},
+      {t:'Santai, nikmati masa muda',e:()=>{P.kuliah.santai=true;addLog('Nongkrong, game, tidur siang. IPK? Urusan nanti.'+fx({happy:+8,smart:-3}));}}
+    ]});
+  }
+  if(P.kuliah&&a===P.kuliah.mulai+P.kuliah.lama){
+    let ipk=2.1+P.st.smart/100*1.7+(P.kuliah.rajin?0.15:0)-(P.kuliah.santai?0.25:0);
+    ipk=clamp(ipk,2.0,4.0);
+    P.eduLevel=4; P.jur=P.kuliah.jur;
+    P.edu='S1 '+P.kuliah.n+' (IPK '+ipk.toFixed(2)+')';
+    stamp('WISUDA'); milestone('Wisuda S1 '+P.kuliah.n+' — IPK '+ipk.toFixed(2));
+    addLog('Setelah skripsi yang penuh air mata, Anda resmi sarjana!','good');
+    const jur=P.kuliah.jur; P.kuliah=null;
+    jobOffers(KARIER[jur].concat([['Staf admin kantor',48e6]]),3);
+  }
+  if(a===58&&P.job){
+    const pesangon=Math.round(P.job.g*1.5);
+    P.pensiun=Math.round(P.job.g*0.3); P.retired=true;
+    addLog('Anda pensiun dari posisi '+LV[P.job.level]+P.job.title+'. Pesangon '+rp(pesangon)+'.'+fx({money:pesangon,stress:-15,happy:+5}),'good');
+    stamp('PENSIUN'); milestone('Pensiun'); P.job=null;
+  }
+  /* ---- MASA KECIL & REMAJA RANDOM ---- */
+  if(a>=1&&a<=5&&r()<0.6){
+    pick([
+      ()=>addLog('Anda jatuh saat belajar sepeda. Lutut lecet, tapi besoknya naik lagi.'+fx({health:-2,happy:+2})),
+      ()=>addLog('Kata pertama Anda bikin satu rumah tertawa berhari-hari.'+fx({happy:+3})),
+      ()=>addLog('Main hujan-hujanan, besoknya demam.'+fx({health:-3})),
+      ()=>addLog('Nenek datang membawa oleh-oleh. Hari terbaik tahun ini.'+fx({happy:+4}))
+    ])();
+  }
+  if(a>=7&&a<=11&&r()<0.6){
+    const pool=[
+      ()=>addLog('Anda punya sahabat baru yang selalu sebangku.'+fx({charm:+4,happy:+3})),
+      ()=>addLog('Dimarahi guru karena mengantuk di kelas.'+fx({happy:-2,stress:+2})),
+      ()=>addLog('Juara lomba balap karung 17 Agustusan!'+fx({happy:+5,health:+2}))
+    ];
+    if(P.st.smart>65)pool.push(()=>addLog('Anda juara kelas! Foto Anda dipajang di mading.'+fx({smart:+3,happy:+5}),'good'));
+    pick(pool)();
+  }
+  if(a>=13&&a<=17&&r()<0.5){
+    const pool=[
+      ()=>addLog('Anda ikut lomba antarsekolah dan masuk tiga besar.'+fx({charm:+3,happy:+4}),'good'),
+      ()=>addLog('Begadang main game, besoknya remedial.'+fx({smart:-2,stress:+3}))
+    ];
+    if(P.st.charm<45)pool.push(()=>addLog('Anda sempat jadi sasaran ledekan kakak kelas. Masa yang berat.'+fx({happy:-7,stress:+7}),'bad'));
+    pick(pool)();
+  }
+  /* ---- PERTEMUAN TAK SENGAJA ---- */
+  if(!P.love&&a>=19&&a<=45&&r()<0.18){
+    const c=newCandidate();
+    ask({title:'PERTEMUAN',text:'Anda berkenalan dengan <b>'+c.nama+'</b> '+pick(['di acara teman','di tempat kerja','lewat media sosial','di warung kopi langganan'])+'. Ada getaran aneh.',opts:[
+      {t:'Dekati pelan-pelan',e:()=>{ if(r()<0.35+P.st.charm/200)jadian(c);
+        else addLog(c.nama.split(' ')[0]+' ternyata sudah punya pasangan. Yah.'+fx({happy:-4}),'bad');}},
+      {t:'Cuek, fokus diri sendiri',e:()=>addLog('Anda memilih fokus pada hidup sendiri dulu.'+fx({stress:-2}))}
+    ]});
+  }
+  /* ---- HUBUNGAN KRITIS (otomatis) ---- */
+  if(P.love&&!P.love.married&&P.love.rel<18){
+    const nm=P.love.nama.split(' ')[0];
+    ask({title:'HUBUNGAN DI UJUNG TANDUK',text:'Hubungan dengan '+nm+' makin dingin. Sudah jarang bicara.',opts:[
+      {t:'Akhiri baik-baik',e:()=>{addLog('Anda dan '+nm+' berpisah. Sakit, tapi lega.'+fx({happy:-12,stress:-5}),'bad');P.love=null;}},
+      {t:'Perjuangkan lagi',e:()=>{ if(r()<0.5){P.love.rel+=30;addLog('Liburan berdua memperbaiki semuanya.'+fx({happy:+6,money:-5e6}),'good');}
+        else {addLog('Usaha Anda bertepuk sebelah tangan. '+nm+' pamit.'+fx({happy:-15,stress:+8}),'bad');P.love=null;}}}
+    ]});
+  } else if(P.love&&!P.love.married&&r()<0.2){
+    addLog('Anda dan '+P.love.nama.split(' ')[0]+' bertengkar soal hal sepele.'+fx({rel:-8,stress:+3}));
+  }
+  if(P.love&&P.love.married&&P.love.rel<15){
+    const nm=P.love.nama.split(' ')[0];
+    ask({title:'RUMAH TANGGA RETAK',text:'Pernikahan dengan '+nm+' di titik terendah. Sering diam-diaman berminggu-minggu.',opts:[
+      {t:'Konseling & perbaiki',e:()=>{ if(r()<0.55){P.love.rel+=35;addLog('Pelan-pelan kalian saling menemukan lagi.'+fx({happy:+8,money:-6e6}),'good');}
+        else cerai();}},
+      {t:'Bercerai',e:()=>cerai()}
+    ]});
+  }
+  if(P.love&&a>72&&r()<0.04){
+    addLog('Pasangan hidup Anda, '+P.love.nama+', berpulang lebih dulu. Separuh jiwa ikut pergi.'+fx({happy:-25,stress:+10,health:-5}),'bad');
+    milestone('Ditinggal pasangan'); P.love=null;
+  }
+  /* ---- ANAK & CUCU ---- */
+  if(P.kids.length&&r()<0.35){
+    const k=pick(P.kids), ua=a-k.lahirAt;
+    if(ua===6)addLog(k.nama+' masuk SD hari ini. Anda yang lebih gugup dari anaknya.'+fx({happy:+4}));
+    else if(ua===18){
+      addLog(k.nama+' lulus sekolah.','good');
+      ask({title:'ANAK MAU KULIAH',text:k.nama+' ingin melanjutkan kuliah. Biaya total sekitar '+rp(80e6)+'.',opts:[
+        {t:'Biayai penuh',cond:()=>P.money>=80e6,e:()=>{P.money-=80e6;k.kuliah=true;
+          addLog('Anda membiayai kuliah '+k.nama+'. Investasi terbaik seorang orang tua.'+fx({happy:+8}),'good');milestone(k.nama+' kuliah');}},
+        {t:'Dorong cari beasiswa / kerja dulu',e:()=>addLog(k.nama+' berjuang lewat jalur beasiswa dan kerja sambilan.'+fx({happy:-2}))}
+      ]});
+    }
+    else if(ua>0&&ua<18&&r()<0.4)addLog(k.nama+' sakit dan harus ke dokter.'+fx({money:-3e6,stress:+3}));
+    else if(ua>2&&ua<18)addLog(k.nama+' memeluk Anda tanpa alasan sepulang kerja. Lelah langsung hilang.'+fx({happy:+5}));
+  }
+  for(const k of P.kids){
+    const ua=a-k.lahirAt;
+    if(ua>=25&&!k.nikah&&r()<0.25){ k.nikah=true;
+      addLog(k.nama+' menikah! Anda menangis di kursi orang tua.'+fx({happy:+10,money:-15e6}),'good'); milestone(k.nama+' menikah'); }
+    if(k.nikah&&!k.anak&&r()<0.3){ k.anak=true; P.cucu++;
+      addLog('Cucu pertama dari '+k.nama+' lahir. Anda resmi jadi '+(P.gender==='L'?'kakek':'nenek')+'.'+fx({happy:+10}),'good'); milestone('Cucu lahir'); }
+  }
+  /* ---- KARIER OTOMATIS ---- */
+  if(P.job&&!P.retired){
+    if(P.job.level<4&&r()<0.1){
+      const gBaru=Math.round(P.job.g*1.4);
+      ask({title:'TAWARAN PROMOSI',text:'Atasan menawarkan posisi '+LV[P.job.level+1]+P.job.title+', gaji '+rp(Math.round(gBaru/12))+'/bulan. Tapi tanggung jawab berlipat.',opts:[
+        {t:'Ambil!',e:()=>{P.job.level++;P.job.g=gBaru;
+          addLog('Anda naik jabatan jadi '+LV[P.job.level]+P.job.title+'.'+fx({stress:+10,happy:+5}),'good');
+          milestone('Promosi: '+LV[P.job.level]+P.job.title);}},
+        {t:'Tolak, jaga keseimbangan hidup',e:()=>addLog('Anda memilih waras daripada jabatan.'+fx({happy:+4,stress:-4}))}
+      ]});
+    } else if(r()<(G.mkt.label==='krisis'?0.1:0.03)){
+      const pesangon=Math.round(P.job.g*0.5);
+      addLog('Perusahaan efisiensi besar-besaran — Anda kena PHK. Pesangon '+rp(pesangon)+'.'+fx({money:pesangon,happy:-12,stress:+12}),'bad');
+      milestone('Kena PHK'); P.job=null;
+    } else if(r()<0.06){
+      const gBaru=Math.round(P.job.g*1.25);
+      ask({title:'DIBAJAK PERUSAHAAN LAIN',text:'Kompetitor menawari posisi sama, gaji '+rp(Math.round(gBaru/12))+'/bulan.',opts:[
+        {t:'Pindah',e:()=>{P.job.g=gBaru;addLog('Anda pindah kantor. Gaji naik, suasana baru.'+fx({happy:+4,stress:+4}),'good');}},
+        {t:'Bertahan, loyalitas',e:()=>addLog('Anda bertahan. Atasan diam-diam menghargainya.'+fx({happy:+2}))}
+      ]});
+    }
+  }
+  /* ---- USAHA OTOMATIS ---- */
+  for(const b of P.biz.slice()){
+    if(P.money<-30e6&&r()<0.5){
+      addLog('Usaha '+b.nama+' tidak tertolong — Anda gulung tikar.'+fx({happy:-12,stress:+12}),'bad');
+      milestone('Usaha bangkrut: '+b.nama); P.biz.splice(P.biz.indexOf(b),1); continue;
+    }
+    if(r()<0.12)addLog('Supplier nakal hampir menipu usaha '+b.nama+'. Untung cepat sadar.'+fx({smart:+2,stress:+4}));
+  }
+  /* ---- KESEHATAN ---- */
+  if(a>=10&&r()<(100-P.st.health)/400+(a>50?0.05:0.02)){
+    const parah=P.st.health<40;
+    const nama_sakit=parah?pick(['tipes berat','demam berdarah','infeksi paru']):pick(['tipes','demam berdarah ringan','maag kambuh parah']);
+    ask({title:'JATUH SAKIT',text:'Anda terkena '+nama_sakit+'. Badan remuk semua.',opts:[
+      {t:'Berobat ke rumah sakit',sub:'Biaya '+rp(parah?15e6:4e6),
+        e:()=>{ if(a>=18)P.money-=(parah?15e6:4e6);
+          addLog('Anda dirawat dan pulih.'+fx({health:+(parah?10:6),stress:+2}));}},
+      {t:'Tahan saja, minum obat warung',e:()=>addLog('Anda memaksakan diri. Badan tidak pernah benar-benar pulih.'+fx({health:-(parah?14:8),stress:+5}),'bad')}
+    ]});
+  }
+  if(P.rokok&&a>=25&&r()<0.15){
+    ask({title:'BATUK TAK KUNJUNG SEMBUH',text:'Batuk Anda makin sering. Dokter menyarankan berhenti merokok.',opts:[
+      {t:'Berhenti total',e:()=>{P.rokok=false;addLog('Anda berhenti merokok. Berat, tapi paru-paru berterima kasih.'+fx({health:+6,stress:+5}),'good');}},
+      {t:'Nanti-nanti saja',e:()=>addLog('Anda menunda lagi. Batuknya ikut menunda sembuh.'+fx({health:-3}),'bad')}
+    ]});
+  }
+  /* ---- KEUANGAN RANDOM ---- */
+  if(a>=20&&P.money>=30e6&&r()<0.05){
+    ask({title:'INVESTASI BODONG?',text:'Kenalan menawarkan "investasi" untung 30% per bulan, tinggal setor '+rp(20e6)+'. Banyak yang sudah "membuktikan".',opts:[
+      {t:'Setor — siapa tahu rezeki',e:()=>{ if(r()<0.9){
+          addLog('Tiga bulan kemudian grupnya bubar, adminnya hilang. Uang Anda raib.'+fx({money:-20e6,happy:-10,stress:+10,smart:+5}),'bad');
+        } else addLog('Anehnya Anda sempat untung dan menarik semua dana tepat waktu.'+fx({money:+15e6}),'good');}},
+      {t:'Tolak mentah-mentah',e:()=>addLog('"Kalau untungnya segitu, kenapa dia masih nawarin orang?" — Anda lolos jebakan.'+fx({smart:+3}))}
+    ]});
+  }
+  if(a>=18&&P.money<-8e6&&P.pinjol===0&&r()<0.4){
+    ask({title:'GODAAN PINJOL',text:'Iklan pinjaman online muncul terus: "Cair 5 menit, tanpa jaminan!"',opts:[
+      {t:'Pinjam '+rp(10e6),e:()=>{P.money+=10e6;P.pinjol=3;
+        addLog('Dana cair. Anda belum sadar bunganya akan mencekik 3 tahun ke depan.'+fx({stress:+5}),'bad');}},
+      {t:'Tahan diri, hidup hemat',e:()=>addLog('Anda mengencangkan ikat pinggang. Pelan tapi selamat.'+fx({stress:+3,smart:+2}))}
+    ]});
+  }
+  if(a>=18&&r()<0.025){
+    const rejeki=ri(2,15)*1e6;
+    addLog(pick(['Anda menang giveaway media sosial','THR tak terduga dari saudara jauh','Uang lama ditemukan di jaket bekas'])+'.'+fx({money:rejeki,happy:+4}),'good');
+  }
+  if(P.aset.includes('Motor')&&a<60&&r()<0.03){
+    addLog('Anda kecelakaan motor — diserempet di perempatan.'+fx({health:-12,money:-4e6,stress:+8}),'bad');
+  }
+  /* ---- HARI TUA ---- */
+  if(a>=60&&r()<0.3){
+    if(P.cucu>0&&r()<0.5)addLog('Cucu Anda datang menginap. Rumah ramai lagi seperti dulu.'+fx({happy:+8}),'good');
+    else addLog(pick(['Anda menyiram tanaman tiap pagi sambil menyapa tetangga','Anda membuka album foto lama dan tersenyum sendiri','Teman lama mampir, kalian tertawa mengenang masa muda'])+'.'+fx({happy:+5,stress:-3}));
+  }
+}
+
+/* ================= MEJA AKSI ================= */
+const TABS=[['diri','DIRI & SOSIAL'],['asmara','ASMARA'],['karier','KARIER'],['usaha','USAHA'],['uang','UANG & ASET'],['hobi','HOBI']];
+const ACTS=[
+/* ---- DIRI & SOSIAL ---- */
+{k:'belajar',tab:'diri',lbl:'Belajar ekstra',sub:'Kecerdasan +3',min:6,e:()=>addLog('Anda belajar lebih giat tahun ini.'+fx({smart:+3,stress:+2}))},
+{k:'olahraga',tab:'diri',lbl:'Olahraga rutin',sub:'Kesehatan +3',min:6,e:()=>addLog('Anda rajin olahraga.'+fx({health:+3,happy:+1}))},
+{k:'meditasi',tab:'diri',lbl:'Me time / istirahat',sub:'Stres −7',min:13,e:()=>addLog('Anda mengambil jeda untuk diri sendiri.'+fx({stress:-7,happy:+2}))},
+{k:'nongkrong',tab:'diri',lbl:'Nongkrong',sub:'Karisma +3',min:13,e:()=>addLog('Anda memperluas pergaulan.'+fx({charm:+3,happy:+2,relasi:+5}))},
+{k:'komunitas',tab:'diri',lbl:'Ikut komunitas / reuni',sub:'Relasi & peluang',min:20,e:()=>{
+  addLog('Anda aktif di komunitas dan reuni.'+fx({charm:+4,happy:+3,relasi:+7}));
+  if(!P.job&&!P.kuliah&&!P.retired&&P.age>=19&&r()<0.25){
+    addLog('Dari obrolan reuni, seorang teman menawarkan lowongan di kantornya.','good');
+    jobOffers(buildPool(),2);
+  }}},
+{k:'donasi',tab:'diri',lbl:'Donasi & bantu warga',sub:'Rp 3 jt · Bahagia +5',min:18,multi:true,cond:()=>P.money>=3e6,e:()=>addLog('Anda menyisihkan rezeki untuk yang membutuhkan.'+fx({money:-3e6,happy:+5,charm:+2,relasi:+2}))},
+{k:'liburan',tab:'diri',lbl:'Liburan',sub:'Rp 6 jt · Stres −8',min:17,multi:true,cond:()=>P.money>=6e6,e:()=>addLog('Anda berlibur melepas penat.'+fx({money:-6e6,happy:+7,stress:-8}))},
+{k:'cek',tab:'diri',lbl:'Medical check-up',sub:'Rp 2,5 jt · Kesehatan +5',min:18,cond:()=>P.money>=2.5e6,e:()=>addLog('Medical check-up dan vitamin setahun.'+fx({money:-2.5e6,health:+5}))},
+{k:'umroh',tab:'diri',lbl:'Umroh',sub:'Rp 35 jt · menyejukkan hati',min:20,cond:()=>P.money>=35e6,e:()=>{
+  P.money-=35e6;
+  addLog('Anda berangkat umroh. Pulang dengan hati yang jauh lebih ringan.'+fx({happy:+10,stress:-10}),'good');milestone('Umroh');}},
+{k:'daftarHaji',tab:'diri',lbl:'Daftar porsi haji',sub:'Setoran Rp 25 jt · antre bertahun-tahun',min:25,cond:()=>!P.haji&&!P.hajiDone&&P.money>=25e6,e:()=>{
+  P.money-=25e6; P.haji={sisa:ri(6,12)};
+  addLog('Porsi haji terdaftar. Perkiraan berangkat <b>'+P.haji.sisa+' tahun lagi</b>. Saatnya menabung pelunasan.'+fx({happy:+4}),'good');milestone('Daftar porsi haji');}},
+{k:'kontrol',tab:'diri',lbl:'Kontrol penyakit rutin',sub:'Disiplin obat & cek dokter berkala',min:35,cond:()=>!!P.kronis&&!P.kronis.kontrol,e:()=>{
+  P.kronis.kontrol=true;
+  addLog('Anda mulai disiplin menangani '+P.kronis.n+': obat rutin, jaga makan, cek berkala.'+fx({health:+3,stress:-3}),'good');}},
+{k:'stopRokok',tab:'diri',lbl:'Berhenti merokok',sub:'Coba lepas dari nikotin',min:15,cond:()=>P.rokok,e:()=>{
+  if(r()<0.55){P.rokok=false;addLog('Anda berhasil berhenti merokok!'+fx({health:+5,stress:+4}),'good');}
+  else addLog('Tiga hari tahan, hari keempat menyerah. Nikotin memang licik.'+fx({stress:+3}),'bad');}},
+{k:'kucing',tab:'diri',lbl:'Adopsi kucing',sub:'Rp 1 jt · teman di rumah',min:17,cond:()=>!P.pet&&P.money>=1e6,e:()=>{
+  P.pet={nama:pick(NAMA_KUCING),lahirAt:P.age};
+  addLog('Anda mengadopsi kucing dan menamainya <b>'+P.pet.nama+'</b>. Rumah jadi lebih hangat.'+fx({money:-1e6,happy:+5}),'good');}},
+{k:'sambilan',tab:'diri',lbl:'Kerja sambilan',sub:'Uang tambahan',min:15,cond:()=>!P.job,e:()=>{const u=ri(2,5)*1e6;
+  addLog('Anda kerja serabutan demi tambahan.'+fx({money:u,stress:+3}));}},
+/* ---- ASMARA ---- */
+{k:'cari',tab:'asmara',lbl:'Cari pasangan',sub:'Buka hati, buka peluang',min:18,cond:()=>!P.love,e:()=>{
+  ask({title:'CARI PASANGAN',text:'Mau lewat jalur mana?',opts:[
+    {t:'Aplikasi kencan',sub:'Gratis, untung-untungan',e:()=>{
+      if(r()<0.25+P.st.charm/250)jadian(newCandidate(),'lewat aplikasi kencan');
+      else addLog('Swipe kanan-kiri sebulan penuh, hasilnya cuma pegal jempol.'+fx({happy:-2}));}},
+    {t:'Minta dikenalkan teman',sub:'Peluang lumayan',e:()=>{
+      if(r()<0.45)jadian(newCandidate(),'dikenalkan teman');
+      else addLog('Teman Anda mengenalkan seseorang, tapi obrolan tidak nyambung.'+fx({stress:+2}));}},
+    {t:'Dekati kenalan langsung',sub:'Modal nekat & karisma',e:()=>{
+      if(r()<0.15+P.st.charm/130)jadian(newCandidate(),'langsung');
+      else addLog('Pendekatan Anda ditolak halus. Sakit, tapi pengalaman.'+fx({happy:-4,charm:+2,stress:+3}),'bad');}},
+    {t:'Batal',e:()=>{}}
+  ]});}},
+{k:'kencan',tab:'asmara',lbl:'Quality time',sub:'Rp 2 jt · Hubungan +6',min:18,multi:true,cond:()=>!!P.love&&P.money>=2e6,e:()=>{
+  P.money-=2e6;
+  addLog('Anda dan '+P.love.nama.split(' ')[0]+' menghabiskan waktu berdua. Sederhana tapi berkesan.'+fx({rel:+6,happy:+3}));}},
+{k:'hadiah',tab:'asmara',lbl:'Beri hadiah',sub:'Rp 5 jt · Hubungan +10',min:18,multi:true,cond:()=>!!P.love&&P.money>=5e6,e:()=>{
+  P.money-=5e6;
+  addLog('Hadiah kejutan untuk '+P.love.nama.split(' ')[0]+'. Matanya berbinar.'+fx({rel:+10,happy:+2}));}},
+{k:'lamar',tab:'asmara',lbl:'Lamar pasangan',sub:'Bawa hubungan ke jenjang serius',min:20,
+  cond:()=>!!P.love&&!P.love.married&&P.love.rel>=60&&P.love.thn>=1&&P.money>=30e6,e:()=>{
+  const nm=P.love.nama.split(' ')[0];
+  ask({title:'MELAMAR '+nm.toUpperCase(),text:'Anda mantap melamar. Pestanya mau seperti apa?',opts:[
+    {t:'Nikah sederhana',sub:'Biaya '+rp(30e6),e:()=>nikah(30e6,6)},
+    {t:'Pesta sedang',sub:'Biaya '+rp(80e6),cond:()=>P.money>=80e6,e:()=>nikah(80e6,10,2)},
+    {t:'Pesta besar',sub:'Biaya '+rp(200e6),cond:()=>P.money>=200e6,e:()=>nikah(200e6,14,5)},
+    {t:'Batal, belum siap',e:()=>{P.love.rel-=5;addLog('Anda mengurungkan niat. '+nm+' tersenyum, tapi matanya berkata lain.'+fx({stress:+3}));}}
+  ]});}},
+{k:'momongan',tab:'asmara',lbl:'Program momongan',sub:'Rencanakan buah hati',min:20,
+  cond:()=>!!P.love&&P.love.married&&P.kids.length<4&&P.age<48,e:()=>{
+  const ch=P.age<35?0.75:P.age<43?0.45:0.15;
+  if(r()<ch)lahirAnak();
+  else addLog('Kalian sudah berusaha, tapi belum rezeki tahun ini. Sabar, ya.'+fx({stress:+3}));}},
+{k:'libkel',tab:'asmara',lbl:'Liburan keluarga',sub:'Rp 10 jt · semua senang',min:20,multi:true,cond:()=>!!P.love&&P.love.married&&P.money>=10e6,e:()=>{
+  P.money-=10e6; if(P.kids.length)P.dekatAnak=clamp(P.dekatAnak+4,0,100);
+  addLog('Liburan keluarga ke '+pick(['pantai','puncak','Bali','rumah nenek'])+'. Foto-fotonya penuh tawa.'+fx({rel:+8,happy:+6,stress:-8}));}},
+{k:'anakTime',tab:'asmara',lbl:'Waktu bersama anak',sub:'Main, antar sekolah, dengarkan ceritanya',min:20,cond:()=>P.kids.length>0,e:()=>{
+  P.dekatAnak=clamp(P.dekatAnak+8,0,100);
+  addLog('Anda meluangkan waktu penuh untuk anak-anak. Hal kecil yang tidak akan mereka lupakan.'+fx({happy:+5,stress:-3}),'good');}},
+{k:'putus',tab:'asmara',lbl:'Akhiri hubungan',sub:'Putus baik-baik',min:18,cond:()=>!!P.love&&!P.love.married,e:()=>{
+  const nm=P.love.nama.split(' ')[0];
+  ask({title:'AKHIRI HUBUNGAN?',text:'Anda yakin ingin mengakhiri hubungan dengan '+nm+'?',opts:[
+    {t:'Ya, akhiri baik-baik',e:()=>{addLog('Anda dan '+nm+' berpisah secara dewasa.'+fx({happy:-10,stress:-3}),'bad');P.love=null;}},
+    {t:'Tidak jadi',e:()=>addLog('Anda mengurungkan niat dan memberi kesempatan sekali lagi.')}
+  ]});}},
+{k:'cerai',tab:'asmara',lbl:'Gugat cerai',sub:'Harta dibagi dua',min:20,cond:()=>!!P.love&&P.love.married,e:()=>{
+  const nm=P.love.nama.split(' ')[0];
+  ask({title:'GUGAT CERAI?',text:'Bercerai dari '+nm+' berarti harta dibagi dua dan luka untuk semua. Yakin?',opts:[
+    {t:'Ya, sudah bulat',e:()=>cerai()},
+    {t:'Batalkan',e:()=>addLog('Anda menarik napas panjang dan memilih bertahan.')}
+  ]});}},
+/* ---- KARIER ---- */
+{k:'lamarKerja',tab:'karier',lbl:'Lamar kerja',sub:'Sebar CV ke mana-mana',min:18,cond:()=>!P.job&&!P.kuliah&&!P.retired,e:()=>{
+  if(r()<0.4+P.st.smart/250+P.st.charm/300+P.sert*0.05+P.st.relasi/500)jobOffers(buildPool(),ri(2,3));
+  else addLog('Puluhan lamaran terkirim, belum ada panggilan. Sabar.'+fx({stress:+5,happy:-2}),'bad');}},
+{k:'lembur',tab:'karier',lbl:'Kerja lembur setahun',sub:'Bonus & performa naik',min:18,cond:()=>!!P.job,e:()=>{
+  const bonus=Math.round(P.job.g*0.12); P.perf=clamp(P.perf+1,0,3);
+  addLog('Anda pasang badan setahun penuh — lembur jadi makanan harian.'+fx({money:bonus,stress:+8,health:-2}));}},
+{k:'naikGaji',tab:'karier',lbl:'Minta naik gaji',sub:'Nego ke atasan',min:18,cond:()=>!!P.job,e:()=>{
+  if(r()<0.25+P.perf*0.2+P.st.charm/300){
+    P.job.g=Math.round(P.job.g*1.12); P.perf=0;
+    addLog('Negosiasi berhasil — gaji naik jadi '+rp(Math.round(P.job.g/12))+'/bulan.','good');
+  } else addLog('Atasan bilang "kita lihat tahun depan, ya." Klasik.'+fx({stress:+4}),'bad');}},
+{k:'promosi',tab:'karier',lbl:'Ajukan promosi',sub:'Incar jabatan lebih tinggi',min:18,cond:()=>!!P.job&&P.job.level<4,e:()=>{
+  if(r()<0.2+P.perf*0.25+P.st.smart/400+(P.s2?0.1:0)){
+    P.job.level++; P.job.g=Math.round(P.job.g*1.35); P.perf=0;
+    addLog('Pengajuan diterima! Anda kini '+LV[P.job.level]+P.job.title+'.'+fx({stress:+8,happy:+6}),'good');
+    milestone('Promosi: '+LV[P.job.level]+P.job.title);
+  } else addLog('Promosi jatuh ke orang lain. Politik kantor memang kejam.'+fx({stress:+5,happy:-3}),'bad');}},
+{k:'pindah',tab:'karier',lbl:'Cari kerja baru',sub:'Lirik perusahaan lain',min:18,cond:()=>!!P.job,e:()=>{
+  if(r()<0.3+P.st.charm/300+P.sert*0.05+P.st.relasi/500)jobOffers(buildPool(),2,1.15);
+  else addLog('Beberapa interview, belum ada yang lebih baik dari posisi sekarang.');}},
+{k:'resign',tab:'karier',lbl:'Resign',sub:'Tinggalkan pekerjaan',min:18,cond:()=>!!P.job,e:()=>{
+  ask({title:'RESIGN?',text:'Berhenti dari posisi '+LV[P.job.level]+P.job.title+' tanpa pegangan baru. Yakin?',opts:[
+    {t:'Ya, saya butuh hidup baru',e:()=>{addLog('Anda menyerahkan surat resign. Lega bercampur cemas.'+fx({stress:-10,happy:+4}));milestone('Resign dari '+P.job.title);P.job=null;}},
+    {t:'Batal',e:()=>addLog('Anda menyimpan lagi surat resign di laci.')}
+  ]});}},
+{k:'sertif',tab:'karier',lbl:'Ikut sertifikasi',sub:'Rp 8 jt · nilai jual naik',min:18,multi:true,cond:()=>P.money>=8e6&&P.sert<5,e:()=>{
+  P.money-=8e6; P.sert++;
+  addLog('Sertifikat baru di tangan. CV makin berbobot.'+fx({smart:+3,stress:+3}),'good');}},
+{k:'s2',tab:'karier',lbl:'Ambil S2',sub:'Rp 60 jt · gerbang karier atas',min:22,cond:()=>P.eduLevel>=4&&!P.s2&&!P.kuliah&&P.money>=60e6,e:()=>{
+  P.money-=60e6; P.s2=true; P.edu+=' + S2';
+  addLog('Dua tahun penuh tesis dan begadang — Anda resmi MAGISTER.'+fx({smart:+8,stress:+8}),'good');
+  stamp('LULUS S2','green'); milestone('Lulus S2');}},
+/* ---- USAHA ---- */
+{k:'buka',tab:'usaha',lbl:'Buka usaha baru',sub:'Maks. 3 usaha berjalan',min:18,multi:true,cond:()=>P.biz.length<3,e:()=>bukaUsahaCard()},
+{k:'promo',tab:'usaha',lbl:'Promosi / iklan',sub:'Dongkrak omzet tahun ini',min:18,multi:true,cond:()=>P.biz.length>0,e:()=>pickBiz('PROMOSI USAHA',b=>{
+  const c=3e6*b.level;
+  if(P.money<c)return addLog('Dana promosi tidak cukup ('+rp(c)+').','bad');
+  P.money-=c; b.hype=Math.min(b.hype+2,4);
+  addLog('Kampanye iklan '+b.nama+' berjalan — nama usaha makin dikenal.'+fx({stress:+2}),'good');})},
+{k:'rekrut',tab:'usaha',lbl:'Rekrut karyawan',sub:'Gaji Rp 20 jt/thn per orang · tanpa batas',min:18,multi:true,cond:()=>P.biz.length>0,e:()=>pickBiz('REKRUT KARYAWAN',b=>{
+  ask({title:'REKRUT UNTUK '+b.nama.toUpperCase(),text:'Saat ini '+b.kary+' karyawan. Berapa orang lagi? Catatan: makin gemuk tim, tambahan produktivitas per orang makin kecil — gaji tetap '+rp(20e6)+'/orang/thn.',
+    opts:[1,3,5,10].map(n=>({t:n+' orang',sub:'Beban gaji +'+rp(20e6*n)+'/thn',e:()=>{
+      b.kary+=n;
+      addLog(n+' karyawan baru bergabung di '+b.nama+' (total '+b.kary+' orang).'+fx({stress:-3}),'good');}}))
+    .concat([{t:'Batal',e:()=>{}}])});})},
+{k:'pecat',tab:'usaha',lbl:'Kurangi karyawan',sub:'Pesangon Rp 5 jt/orang',min:18,multi:true,cond:()=>P.biz.some(b=>b.kary>0),e:()=>pickBiz('KURANGI KARYAWAN',b=>{
+  if(b.kary<1)return addLog(b.nama+' tidak punya karyawan.');
+  const ops=[1,3,5].filter(n=>n<b.kary).map(n=>({t:n+' orang',sub:'Pesangon '+rp(5e6*n),e:()=>{
+    b.kary-=n;P.money-=5e6*n;
+    addLog(n+' karyawan '+b.nama+' dirumahkan dengan pesangon (sisa '+b.kary+').'+fx({stress:+2}),'bad');}}));
+  ops.push({t:'Semua ('+b.kary+' orang)',sub:'Pesangon '+rp(5e6*b.kary),e:()=>{
+    const n=b.kary;b.kary=0;P.money-=5e6*n;
+    addLog('Seluruh '+n+' karyawan '+b.nama+' dirumahkan. Anda kembali kerja sendirian.'+fx({stress:+4}),'bad');}});
+  ops.push({t:'Batal',e:()=>{}});
+  ask({title:'KURANGI KARYAWAN '+b.nama.toUpperCase(),text:'Karyawan saat ini: '+b.kary+' orang. Beban gaji '+rp(20e6*b.kary)+'/thn.',opts:ops});})},
+{k:'ekspansi',tab:'usaha',lbl:'Ekspansi / buka cabang',sub:'Modal = modal awal',min:18,multi:true,cond:()=>P.biz.some(b=>b.level<5&&P.money>=b.modal),e:()=>pickBiz('EKSPANSI USAHA',b=>{
+  if(b.level>=5)return addLog(b.nama+' sudah di skala maksimal.');
+  if(P.money<b.modal)return addLog('Modal ekspansi kurang ('+rp(b.modal)+').','bad');
+  P.money-=b.modal; b.level++;
+  addLog('Cabang baru '+b.nama+' dibuka! Kini level '+b.level+'.'+fx({stress:+5,happy:+4}),'good');
+  milestone('Ekspansi '+b.nama+' lv.'+b.level);})},
+{k:'jualBiz',tab:'usaha',lbl:'Jual usaha',sub:'Lepas ke pembeli',min:18,multi:true,cond:()=>P.biz.length>0,e:()=>pickBiz('JUAL USAHA',b=>{
+  const harga=bizValue(b);
+  ask({title:'JUAL '+b.nama.toUpperCase()+'?',text:'Ada pembeli serius menawar '+rp(harga)+'. Lepas?',opts:[
+    {t:'Jual',e:()=>{P.money+=harga;P.biz.splice(P.biz.indexOf(b),1);
+      addLog('Usaha '+b.nama+' resmi berpindah tangan seharga '+rp(harga)+'.','good');milestone('Jual usaha '+b.nama);}},
+    {t:'Tidak jadi',e:()=>addLog('Anda menolak tawaran. '+b.nama+' tetap milik Anda.')}
+  ]});})},
+/* ---- UANG & ASET ---- */
+{k:'invest',tab:'uang',lbl:'Investasi',sub:'Deposito, emas, saham, kripto',min:18,multi:true,cond:()=>P.money>=10e6,e:()=>{
+  ask({title:'PILIH INSTRUMEN',text:'Uang yang diinvestasikan akan tumbuh (atau menyusut) tiap tahun:',
+    opts:INV.map(v=>({t:v.n,sub:v.desc,e:()=>{
+      const amts=[10e6,25e6,50e6,100e6,250e6,500e6,1e9].filter(x=>x<=P.money);
+      ask({title:'SETOR KE '+v.n.toUpperCase(),text:'Berapa yang mau disetor? (Uang tunai: '+rp(P.money)+')',
+        opts:amts.map(x=>({t:rp(x),e:()=>{P.money-=x;P.inv[v.k]+=x;
+          addLog('Anda menempatkan '+rp(x)+' di '+v.n+'.','good');}}))
+          .concat([{t:'Semua uang tunai',cond:()=>P.money>0,e:()=>{const x=P.money;P.money=0;P.inv[v.k]+=x;
+            addLog('All-in! Seluruh '+rp(x)+' masuk ke '+v.n+'. Berani juga.','good');}},
+          {t:'Batal',e:()=>{}}])});
+    }})).concat([{t:'Batal',e:()=>{}}])});}},
+{k:'tarik',tab:'uang',lbl:'Cairkan investasi',sub:'Tarik seluruh saldo instrumen',min:18,multi:true,cond:()=>INV.some(v=>P.inv[v.k]>0),e:()=>{
+  ask({title:'CAIRKAN INVESTASI',text:'Pilih instrumen yang mau dicairkan seluruhnya:',
+    opts:INV.filter(v=>P.inv[v.k]>0).map(v=>({t:v.n,sub:'Saldo '+rp(P.inv[v.k]),e:()=>{
+      const x=P.inv[v.k]; P.inv[v.k]=0; P.money+=x;
+      addLog('Anda mencairkan '+v.n+' senilai '+rp(x)+'.','good');}}))
+      .concat([{t:'Batal',e:()=>{}}])});}},
+{k:'kta',tab:'uang',lbl:'Pinjam bank (KTA)',sub:'Bunga ±8%/thn flat · tenor 5 thn',min:21,cond:()=>!P.kta&&(!!P.job||P.biz.length>0),e:()=>{
+  ask({title:'KREDIT TANPA AGUNAN',text:'Bank menyetujui plafon berdasarkan profil Anda. Total pengembalian 140%, dicicil rata 5 tahun.',
+    opts:[50e6,100e6,250e6,500e6].map(x=>({t:'Pinjam '+rp(x),sub:'Cicilan '+rp(Math.round(x*1.4/5))+'/thn',e:()=>{
+      P.money+=x; P.kta={sisa:Math.round(x*1.4),cicilan:Math.round(x*1.4/5),thn:5};
+      addLog('Dana KTA '+rp(x)+' cair ke rekening. Gunakan dengan bijak — bank tidak kenal kata sungkan.'+fx({stress:+3}),'good');
+      milestone('Ambil KTA '+rp(x));}}))
+    .concat([{t:'Batal',e:()=>{}}])});}},
+{k:'lunasKta',tab:'uang',lbl:'Lunasi KTA sekaligus',sub:'Bayar sisa pinjaman bank',min:21,cond:()=>!!P.kta&&P.money>=P.kta.sisa,e:()=>{
+  const x=P.kta.sisa;P.money-=x;P.kta=null;
+  addLog('KTA lunas '+rp(x)+' sekaligus. Satu beban bulanan hilang.'+fx({stress:-6,happy:+4}),'good');}},
+{k:'gaya',tab:'uang',lbl:'Atur gaya hidup',sub:'Hemat / normal / mewah',min:18,e:()=>{
+  ask({title:'GAYA HIDUP',text:'Saat ini: '+P.gaya.toUpperCase()+'. Standar pengeluaran menentukan biaya hidup dan suasana hati tiap tahun:',opts:[
+    {t:'Hemat',sub:'Biaya hidup −30% · hiburan minim',cond:()=>P.gaya!=='hemat',e:()=>{P.gaya='hemat';
+      addLog('Ikat pinggang dikencangkan: masak sendiri, jajan dipangkas, langganan dicabut.');}},
+    {t:'Normal',sub:'Standar wajar',cond:()=>P.gaya!=='normal',e:()=>{P.gaya='normal';
+      addLog('Pengeluaran kembali ke standar wajar. Cukup, tidak kurang, tidak lebay.');}},
+    {t:'Mewah',sub:'Biaya hidup +80% · bahagia & gengsi naik',cond:()=>P.gaya!=='mewah',e:()=>{P.gaya='mewah';
+      addLog('Kopi artisan, outfit branded, nongkrong di rooftop. Hidup cuma sekali, katanya.');}},
+    {t:'Batal',e:()=>{}}
+  ]});}},
+{k:'jualMotor',tab:'uang',lbl:'Jual motor',sub:'Laku ±Rp 10 jt',min:17,cond:()=>P.aset.includes('Motor'),e:()=>{
+  P.aset.splice(P.aset.indexOf('Motor'),1);
+  addLog('Motor kesayangan berpindah tangan ke pembeli OLX.'+fx({money:+10e6,happy:-2}));}},
+{k:'jualMobil',tab:'uang',lbl:'Jual mobil',sub:'Laku ±Rp 80 jt',min:20,cond:()=>P.aset.includes('Mobil'),e:()=>{
+  P.aset.splice(P.aset.indexOf('Mobil'),1);
+  addLog('Mobil Anda laku terjual. Garasi mendadak lega.'+fx({money:+80e6,happy:-2}));}},
+{k:'asuransi',tab:'uang',lbl:'Ikut asuransi kesehatan',sub:'Premi Rp 6 jt/thn · biaya rawat ditanggung 80%',min:18,cond:()=>!P.asuransi,e:()=>{
+  P.asuransi=true;
+  addLog('Polis asuransi kesehatan aktif. Premi '+rp(6e6)+'/tahun masuk pengeluaran rutin.'+fx({stress:-3}),'good');}},
+{k:'stopAsuransi',tab:'uang',lbl:'Stop asuransi kesehatan',sub:'Hentikan premi tahunan',min:18,cond:()=>P.asuransi,e:()=>{
+  P.asuransi=false;
+  addLog('Polis asuransi dihentikan. Semoga badan bisa diajak kompromi.');}},
+{k:'motor',tab:'uang',lbl:'Beli motor',sub:'Rp 18 jt',min:17,cond:()=>!P.aset.includes('Motor')&&P.money>=18e6,e:()=>{
+  P.money-=18e6;P.aset.push('Motor');
+  addLog('Motor pertama! Anda mencucinya tiap minggu seperti merawat bayi.'+fx({happy:+7}),'good');milestone('Motor pertama');}},
+{k:'mobil',tab:'uang',lbl:'Beli mobil',sub:'Rp 120 jt',min:20,cond:()=>!P.aset.includes('Mobil')&&P.money>=120e6,e:()=>{
+  P.money-=120e6;P.aset.push('Mobil');
+  addLog('Mobil pertama terparkir di depan rumah. Tetangga ikut bangga (dan sedikit iri).'+fx({happy:+8}),'good');milestone('Mobil pertama');}},
+{k:'rumah',tab:'uang',lbl:'Beli rumah',sub:'Cash Rp 350 jt / KPR',min:22,cond:()=>!P.aset.includes('Rumah')&&P.money>=70e6,e:()=>{
+  ask({title:'RUMAH SENDIRI',text:'Impian semua orang: rumah atas nama sendiri. Skema mana?',opts:[
+    {t:'Bayar cash',sub:rp(350e6)+' langsung lunas',cond:()=>P.money>=350e6,e:()=>{
+      P.money-=350e6;P.aset.push('Rumah');
+      addLog('Kunci rumah di tangan, lunas tanpa utang. Tidak ada lagi kata "ngontrak".'+fx({happy:+15,stress:-8}),'good');
+      stamp('RUMAH PERTAMA','green');milestone('Beli rumah (cash)');}},
+    {t:'KPR 15 tahun',sub:'DP '+rp(70e6)+' · cicilan '+rp(28e6)+'/thn',e:()=>{
+      P.money-=70e6;P.aset.push('Rumah');P.kpr={sisa:420e6,cicilan:28e6,thn:15};
+      addLog('Akad KPR ditandatangani. Rumah milik sendiri — bank ikut numpang dulu 15 tahun.'+fx({happy:+12,stress:+4}),'good');
+      stamp('RUMAH PERTAMA','green');milestone('Beli rumah (KPR)');}},
+    {t:'Batal',e:()=>{}}
+  ]});}},
+{k:'tanah',tab:'uang',lbl:'Beli tanah kavling',sub:'Rp 100 jt · nilai naik tiap tahun',min:20,multi:true,cond:()=>P.money>=100e6,e:()=>{
+  P.money-=100e6;P.tanah+=100e6;
+  addLog('Sertifikat tanah kavling masuk lemari. Tanah tidak pernah berbohong.'+fx({happy:+4}),'good');milestone('Beli tanah');}},
+{k:'jualTanah',tab:'uang',lbl:'Jual tanah',sub:'Lepas semua kavling',min:20,cond:()=>P.tanah>0,e:()=>{
+  const x=P.tanah;P.tanah=0;P.money+=x;
+  addLog('Tanah Anda laku '+rp(x)+'. Kavling memang investasi sabar.','good');}},
+{k:'lunasPinjol',tab:'uang',lbl:'Lunasi pinjol',sub:'Bayar tuntas, hidup tenang',min:18,cond:()=>P.pinjol>0&&P.money>=P.pinjol*6e6,e:()=>{
+  const x=P.pinjol*6e6;P.money-=x;P.pinjol=0;
+  addLog('Pinjol lunas total '+rp(x)+'. Nomor DC akhirnya bisa diblokir.'+fx({stress:-12,happy:+5}),'good');}},
+{k:'lunasKpr',tab:'uang',lbl:'Lunasi KPR sekaligus',sub:'Bayar sisa pokok',min:22,cond:()=>!!P.kpr&&P.money>=P.kpr.sisa,e:()=>{
+  const x=P.kpr.sisa;P.money-=x;P.kpr=null;
+  addLog('Anda melunasi sisa KPR '+rp(x)+' sekaligus. Rumah 100% milik Anda.'+fx({stress:-10,happy:+8}),'good');
+  stamp('KPR LUNAS','green');milestone('KPR lunas (dipercepat)');}},
+/* ---- HOBI ---- */
+{k:'mulaiHobi',tab:'hobi',lbl:'Mulai hobi baru',sub:'Maks. 4 hobi aktif',min:10,multi:true,cond:()=>P.hobi.length<4,e:()=>{
+  ask({title:'HOBI BARU',text:'Hidup bukan cuma kerja. Mau menekuni apa?',
+    opts:HOBI.filter(h=>!P.hobi.some(x=>x.k===h.k)).map(h=>({t:h.n,
+      sub:(h.mulai>0?'Modal awal '+rp(h.mulai):'Tanpa modal awal')+(h.b>0?' · biaya '+rp(h.b)+'/thn':''),
+      cond:()=>P.age<18||P.money>=h.mulai,
+      e:()=>{ if(P.age>=18)P.money-=h.mulai;
+        P.hobi.push({k:h.k,level:1,xp:0});
+        addLog('Anda mulai menekuni hobi baru: <b>'+h.n+'</b>.'+fx({happy:+4}),'good');
+        milestone('Mulai hobi '+h.n);}}))
+      .concat([{t:'Batal',e:()=>{}}])});}},
+{k:'lepasHobi',tab:'hobi',lbl:'Lepas hobi',sub:'Pensiunkan satu hobi',min:10,multi:true,cond:()=>P.hobi.length>0,e:()=>{
+  ask({title:'LEPAS HOBI',text:'Hobi mana yang mau ditinggalkan?',
+    opts:P.hobi.map(h=>({t:HOBI.find(x=>x.k===h.k).n,sub:'Level '+h.level,e:()=>{
+      P.hobi.splice(P.hobi.indexOf(h),1);
+      addLog('Anda pamit dari hobi '+HOBI.find(x=>x.k===h.k).n+'. Mungkin suatu saat kembali.');}}))
+      .concat([{t:'Batal',e:()=>{}}])});}}
+];
+
+function actAvail(a){
+  if(P.age<a.min)return {ok:false,why:'Mulai umur '+a.min};
+  if(a.cond&&!a.cond())return {ok:false,why:'Syarat belum terpenuhi'};
+  if(!a.multi&&P.used[a.k])return {ok:false,why:'Sudah dilakukan tahun ini',used:true};
+  return {ok:true};
+}
+function doAct(k){
+  if(G.current||G.over||!P.alive)return;
+  if(k.startsWith('tekuni:')){
+    const hk=k.slice(7);
+    if(P.used[k]||!P.hobi.some(h=>h.k===hk))return;
+    P.used[k]=true; G.acted++;
+    tekuni(hk);
+  } else {
+    const a=ACTS.find(x=>x.k===k);
+    if(!a)return;
+    const av=actAvail(a);
+    if(!av.ok)return;
+    if(!a.multi)P.used[k]=true;
+    G.acted++;
+    a.e();
+  }
+  if(G.acted>5){ P.st.stress=clamp(P.st.stress+2,0,100); }
+  checkAch();
+  render();
+}
+
+/* ================= RENDER ================= */
+function renderKartu(){
+  if(!hasDoc)return;
+  const k=$('kartu');
+  if(!G.current){k.innerHTML='';return;}
+  const d=G.current;
+  k.innerHTML='<div class="kartu"><div class="kh">FORMULIR KEPUTUSAN — '+d.title+'</div>'+
+    '<div class="kt">'+d.text+'</div>'+
+    d.opts.map((o,i)=>'<button data-i="'+i+'"><span class="num">'+(i+1)+'.</span> '+o.t+(o.sub?'<small>'+o.sub+'</small>':'')+'</button>').join('')+
+    '</div>';
+}
+function bar(label,val,invert){
+  const pct=Math.round(val);
+  const cls=invert?(pct>66?'low':pct>33?'mid':''):(pct<34?'low':pct<67?'mid':'');
+  return '<div class="stat"><div class="sl"><span>'+label+'</span><span>'+pct+'</span></div>'+
+    '<div class="sbar"><i class="'+cls+'" style="width:'+pct+'%"></i></div></div>';
+}
+function render(){
+  if(!hasDoc||!P)return;
+  $('hdrNow').textContent='UMUR '+P.age+' • '+(P.lahir+P.age);
+  $('iNama').textContent=P.nama+(P.gen>1?' (Gen. '+P.gen+')':'');
+  $('iTtl').textContent=P.kota+', '+P.lahir;
+  $('iUmur').textContent=P.age+' tahun';
+  $('iEdu').textContent=P.edu;
+  $('iStatus').textContent=P.love?(P.love.married?'Menikah dgn '+P.love.nama.split(' ')[0]:'Pacaran dgn '+P.love.nama.split(' ')[0]):'Lajang';
+  const u=$('iUang'); u.textContent=rp(P.money); u.classList.toggle('neg',P.money<0);
+  const nw=netWorth();
+  const n2=$('iNet'); n2.textContent=rp(nw); n2.classList.toggle('neg',nw<0);
+  $('stats').innerHTML=bar('Kesehatan',P.st.health)+bar('Kebahagiaan',P.st.happy)+
+    bar('Kecerdasan',P.st.smart)+bar('Karisma',P.st.charm)+bar('Relasi',P.st.relasi)+bar('Stres',P.st.stress,true);
+  /* pekerjaan & usaha */
+  let kj='';
+  if(P.retired)kj+='<div class="fr"><span>Status</span><span>Pensiunan ('+rp(Math.round(P.pensiun/12))+'/bln)</span></div>';
+  else if(P.job)kj+='<div class="fr"><span>'+LV[P.job.level]+P.job.title+'</span><span>'+rp(Math.round(P.job.g/12))+'/bln</span></div>';
+  else if(P.kuliah)kj+='<div class="fr"><span>Mahasiswa</span><span>'+P.kuliah.n+'</span></div>';
+  else if(P.age>=18)kj+='<div class="fr"><span>Status</span><span>Belum bekerja</span></div>';
+  else kj+='<div class="fr"><span>Status</span><span>Pelajar / anak</span></div>';
+  if(P.sert)kj+='<div class="fr"><span>Sertifikasi</span><span>'+P.sert+' sertifikat</span></div>';
+  for(const b of P.biz)
+    kj+='<div class="fr"><span>'+b.nama+'</span><span>Lv.'+b.level+' · '+b.kary+' kary.'+(b.hype>0?' · promo':'')+'</span></div>';
+  $('kerja').innerHTML=kj;
+  /* keluarga */
+  let f='';
+  f+='<div class="fr'+(P.ortu.ayah?'':' dead')+'"><span>Ayah</span><span>'+(P.ortu.ayah?'hidup, '+(P.age+P.ortu.ayahOff)+' th':'almarhum')+'</span></div>';
+  f+='<div class="fr'+(P.ortu.ibu?'':' dead')+'"><span>Ibu</span><span>'+(P.ortu.ibu?'hidup, '+(P.age+P.ortu.ibuOff)+' th':'almarhumah')+'</span></div>';
+  if(P.love)f+='<div class="fr"><span>'+(P.love.married?'Pasangan':'Pacar')+'</span><span>'+P.love.nama.split(' ')[0]+' ('+P.love.sifat.n+')</span></div>';
+  for(const k of P.kids)f+='<div class="fr"><span>Anak'+(k.jk==='L'?' (L)':' (P)')+'</span><span>'+k.nama+', '+(P.age-k.lahirAt)+' th</span></div>';
+  if(P.cucu)f+='<div class="fr"><span>Cucu</span><span>'+P.cucu+' orang</span></div>';
+  if(P.pet)f+='<div class="fr"><span>Kucing</span><span>'+P.pet.nama+', '+(P.age-P.pet.lahirAt)+' th</span></div>';
+  $('fam').innerHTML=f;
+  $('relbar').innerHTML=(P.love?bar('Hubungan dgn '+P.love.nama.split(' ')[0],P.love.rel):'')+
+    (P.kids.length?bar('Kedekatan dgn anak',P.dekatAnak):'');
+  /* hobi */
+  $('hobi').innerHTML=P.hobi.length?P.hobi.map(h=>'<span class="chip">'+HOBI.find(x=>x.k===h.k).n+' · Lv.'+h.level+'</span>').join(''):'<span class="muted">Belum punya hobi.</span>';
+  /* portofolio */
+  let po='';
+  for(const v of INV)if(P.inv[v.k]>0)po+='<div class="fr"><span>'+v.n+'</span><span>'+rp(P.inv[v.k])+'</span></div>';
+  if(P.tanah>0)po+='<div class="fr"><span>Tanah kavling</span><span>'+rp(P.tanah)+'</span></div>';
+  if(P.kpr)po+='<div class="fr"><span>Sisa KPR</span><span>−'+rp(P.kpr.sisa).replace('Rp ','Rp ')+' ('+P.kpr.thn+' th)</span></div>';
+  if(P.pinjol>0)po+='<div class="fr"><span>Utang pinjol</span><span>'+P.pinjol+' th lagi</span></div>';
+  if(P.kta)po+='<div class="fr"><span>Sisa KTA bank</span><span>−'+rp(P.kta.sisa)+' ('+P.kta.thn+' th)</span></div>';
+  if(P.gaya!=='normal')po+='<div class="fr"><span>Gaya hidup</span><span>'+P.gaya+'</span></div>';
+  if(P.kronis)po+='<div class="fr"><span>Penyakit kronis</span><span>'+P.kronis.n+(P.kronis.kontrol?' · terkontrol':' · <b>terabaikan</b>')+'</span></div>';
+  if(P.asuransi)po+='<div class="fr"><span>Asuransi kesehatan</span><span>aktif · '+rp(6e6)+'/thn</span></div>';
+  if(P.haji)po+='<div class="fr"><span>Antrian haji</span><span>±'+P.haji.sisa+' th lagi</span></div>';
+  if(P.hajiDone)po+='<div class="fr"><span>Ibadah haji</span><span>sudah ✓</span></div>';
+  $('porto').innerHTML=po||'<span class="muted">Belum ada investasi.</span>';
+  $('aset').innerHTML=P.aset.length?P.aset.map(x=>'<span class="chip">'+x+'</span>').join(''):'<span class="muted">Belum punya aset.</span>';
+  /* pencapaian */
+  const ak=Object.keys(P.ach);
+  $('ach').innerHTML=ak.length?ak.map(k=>'<span class="chip au">'+ACH_DEF[k]+'</span>').join(''):'<span class="muted">Belum ada.</span>';
+  /* tabs */
+  $('tabs').innerHTML=TABS.map(t=>'<button data-tab="'+t[0]+'" class="'+(G.tab===t[0]?'on':'')+'" role="tab">'+t[1]+'</button>').join('');
+  /* meja aksi */
+  const busy=!!G.current||G.over;
+  let html='';
+  const list=ACTS.filter(a=>a.tab===G.tab);
+  for(const a of list){
+    const av=actAvail(a);
+    const dis=busy||!av.ok;
+    if(P.age<a.min)continue;
+    html+='<button data-act="'+a.k+'" '+(dis?'disabled':'')+' class="'+(av.used?'used':'')+'" title="'+(av.ok?'':av.why||'')+'">'+
+      '<b>'+a.lbl+(a.multi?' ↻':'')+'</b><span>'+(a.sub||'')+'</span></button>';
+  }
+  if(G.tab==='hobi'){
+    for(const h of P.hobi){
+      const def=HOBI.find(x=>x.k===h.k);
+      const key='tekuni:'+h.k;
+      const used=!!P.used[key];
+      const cant=def.b>0&&P.age>=18&&P.money<def.b;
+      html+='<button data-act="'+key+'" '+((busy||used||cant)?'disabled':'')+' class="'+(used?'used':'')+'">'+
+        '<b>Tekuni: '+def.n+'</b><span>Lv.'+h.level+(def.b>0?' · '+rp(def.b)+'/thn':'')+'</span></button>';
+    }
+  }
+  if(!html)html='<div class="empty">'+(P.age<6?'Masih terlalu kecil — jalani saja masa bayi yang damai.':'Belum ada aksi yang tersedia di laci ini.')+'</div>';
+  $('acts').innerHTML=html;
+  $('actInfo').textContent=G.over?'':P.age<6?'Tekan "Jalani Umur +1" untuk tumbuh besar.':
+    (G.acted>5?'Tahun yang sangat padat — badan mulai protes (stres naik).':'Aksi bertanda ↻ bisa diulang dalam setahun; lainnya sekali per tahun.');
+  $('nextBtn').disabled=!!G.current||G.over;
+  renderKartu();
+}
+
+/* ================= BOOT ================= */
+if(hasDoc){
+  $('nextBtn').addEventListener('click',advance);
+  $('kartu').addEventListener('click',e=>{
+    const b=e.target.closest('button[data-i]'); if(b)choose(+b.dataset.i);
+  });
+  $('acts').addEventListener('click',e=>{
+    const b=e.target.closest('button[data-act]'); if(b&&!b.disabled)doAct(b.dataset.act);
+  });
+  $('tabs').addEventListener('click',e=>{
+    const b=e.target.closest('button[data-tab]'); if(b){G.tab=b.dataset.tab;render();}
+  });
+  $('epilog').addEventListener('click',e=>{
+    const b=e.target.closest('button[data-go]'); if(!b)return;
+    if(b.dataset.go==='new')newGame();
+    if(b.dataset.go==='anak')contAsChild();
+    if(b.dataset.go==='cancel')$('overlay').classList.add('hidden');
+  });
+  $('restartBtn').addEventListener('click',()=>{
+    if(G.over){newGame();return;}
+    $('epilog').innerHTML='<h2 style="color:var(--ink)">MULAI HIDUP BARU?</h2>'+
+      '<div class="sub">Hidup '+P.nama+' yang sekarang akan ditinggalkan dan tidak bisa kembali.</div>'+
+      '<div class="row2"><button data-go="new">Ya, Hidup Baru</button><button data-go="cancel" class="ghost">Batal</button></div>';
+    $('overlay').classList.remove('hidden');
+  });
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+    if(G.current&&e.key>='1'&&e.key<='9'){ const i=+e.key-1; if(G.current.opts[i]){e.preventDefault();choose(i);} }
+    else if(!G.current&&!G.over&&(e.key===' '||e.key==='Enter')&&document.activeElement.tagName!=='BUTTON'){ e.preventDefault(); advance(); }
+  });
+}
+newGame();
+</script>
+</body>
+</html>
